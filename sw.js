@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aura-music-v16';
+const CACHE_NAME = 'aura-music-v17';
 const ASSETS_TO_CACHE = [
   './',
   './index.php',

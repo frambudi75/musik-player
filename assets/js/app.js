@@ -968,11 +968,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       await window.AudioCore.play();
     }
 
-    // Load Lyrics
+    // Load Lyrics & Intelligent Auto-Fetch if Missing
     if (song.lyrics) {
       window.LyricsEngine.loadLyrics(song.lyrics);
     } else {
       window.LyricsEngine.loadLyrics(null);
+      // Automatically search and sync lyrics in the background
+      autoFetchLyricsForSong(song);
     }
 
     // Start Visualizer
@@ -1296,8 +1298,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Auto Lyrics Online Search Handler (LRCLIB API)
-  window.fetchOnlineLyricsForCurrentSong = async function() {
+  // Cache to avoid duplicate background auto-fetch requests
+  const _lyricsAutoFetchCache = new Set();
+
+  /**
+   * Automatically and silently search lyrics in background when playing a song without lyrics
+   */
+  async function autoFetchLyricsForSong(song) {
+    if (!song || song.lyrics || _lyricsAutoFetchCache.has(song.id)) return;
+    _lyricsAutoFetchCache.add(song.id);
+
+    try {
+      const res = await fetch('api/lyrics_search.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: song.title,
+          artist: song.artist,
+          filename: song.filename || '',
+          duration: song.duration || 0
+        })
+      });
+
+      const data = await res.json();
+      if (data.status === 'success' && data.lyrics) {
+        song.lyrics = data.lyrics;
+        if (data.lyrics_url) song.lyrics_url = data.lyrics_url;
+
+        // If currently playing song is still this song, load into engine immediately!
+        if (window.PlaylistManager.currentSong && window.PlaylistManager.currentSong.id === song.id) {
+          window.LyricsEngine.loadLyrics(data.lyrics);
+          showToast(`Lirik sinkron ditemukan: "${song.title}" ✨`, '🎵');
+        }
+      }
+    } catch (err) {
+      // Silently ignore background lookup failures
+    }
+  }
+
+  // Intelligent Lyrics Online Search Handler with Custom Query Prompt Fallback
+  window.fetchOnlineLyricsForCurrentSong = async function(customQuery = null) {
     const song = window.PlaylistManager.currentSong;
     if (!song) {
       showToast('Pilih lagu terlebih dahulu', '⚠️');
@@ -1307,29 +1347,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btn = document.getElementById('fetch-online-lyrics-btn');
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = `<span>Mencari lirik online...</span>`;
+      btn.innerHTML = `<span>Mencari lirik cerdas...</span>`;
     }
 
-    showToast(`Mencari lirik online untuk "${song.title}"...`, '🔍');
+    const searchQuery = customQuery || song.title;
+    showToast(`Mencari lirik untuk "${searchQuery}"...`, '🔍');
 
     try {
       const res = await fetch('api/lyrics_search.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: song.title,
-          artist: song.artist,
-          filename: song.filename || ''
+          title: customQuery ? customQuery : song.title,
+          artist: customQuery ? '' : song.artist,
+          filename: song.filename || '',
+          duration: song.duration || 0
         })
       });
 
       const data = await res.json();
       if (data.status === 'success' && data.lyrics) {
         song.lyrics = data.lyrics;
+        if (data.lyrics_url) song.lyrics_url = data.lyrics_url;
         window.LyricsEngine.loadLyrics(data.lyrics);
-        showToast(data.message || 'Lirik sinkron berhasil ditemukan!', '✓');
+        showToast(data.message || 'Lirik sinkron berhasil ditemukan dan disimpan!', '✓');
       } else {
-        showToast(data.message || 'Lirik tidak ditemukan di database online', 'ℹ️');
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = `
@@ -1337,8 +1379,18 @@ document.addEventListener('DOMContentLoaded', async () => {
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
-            <span>Coba Cari Lagi</span>
+            <span>Cari Kata Kunci Lain</span>
           `;
+        }
+        // Ask user if they want to enter custom keyword
+        const manualQuery = prompt(
+          `Lirik otomatis belum ditemukan untuk "${song.title}".\n\nMasukkan kata kunci pencarian (misal: "Back Number Shiawase"):`,
+          song.title
+        );
+        if (manualQuery && manualQuery.trim() && manualQuery.trim() !== song.title) {
+          window.fetchOnlineLyricsForCurrentSong(manualQuery.trim());
+        } else {
+          showToast(data.message || 'Lirik tidak ditemukan di database online', 'ℹ️');
         }
       }
     } catch (err) {
