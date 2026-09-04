@@ -52,7 +52,24 @@ Aura Music adalah aplikasi pemutar musik modern (*Self-Hosted Web Music Player*)
 
 ---
 
-### A. Menjalankan di Localhost (XAMPP / Laragon / PHP Built-in)
+### A. Menjalankan dengan Docker & Docker Compose (Paling Direkomendasikan 🐳)
+
+Cara tercepat dan paling bersih tanpa perlu install PHP, FFmpeg, atau Python secara manual di host:
+
+```bash
+# 1. Clone Repositori
+git clone https://github.com/frambudi75/musik-player.git
+cd musik-player
+
+# 2. Jalankan Container
+docker compose up -d --build
+```
+Akses langsung di browser: `http://localhost:8080` (Semua lagu & covers disimpan persisten di folder `./songs`).
+📖 *Lihat panduan lengkap di [docs/docker.md](./docs/docker.md)*.
+
+---
+
+### B. Menjalankan di Localhost (XAMPP / Laragon / PHP Built-in)
 
 1. **Clone Repositori:**
    ```bash

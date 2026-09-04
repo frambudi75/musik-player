@@ -13,8 +13,9 @@ Selamat datang di pusat dokumentasi teknis **Aura Music Web Player**. Dokumen di
 | 🔌 **[Spesifikasi REST API](./api.md)** | Dokumentasi lengkap endpoint HTTP API, format payload JSON, dan error handling. |
 | 💾 **[Manajemen Data & Penyimpanan](./database.md)** | Struktur penyimpanan file audio, ID3 metadata caching, IndexedDB offline storage, dan JSON playlists. |
 | 🎨 **[Desain UI/UX & Interaksi](./ui-ux.md)** | Panduan desain Glassmorphism, adaptive ambient glow, sistem visualizer, dan responsivitas mobile. |
-| 🚢 **[Panduan Deployment & Operasional](./deployment.md)** | Panduan instalasi di VPS Linux (aaPanel/Nginx), Docker, tuning performa PHP-FPM, dan troubleshooting. |
-| 📜 **[Changelog](./changelog.md)** | Catatan riwayat versi, penambahan fitur baru, dan perbaikan bug dari v1.0.0 hingga v2.1.0. |
+| 🚢 **[Panduan Deployment & Operasional](./deployment.md)** | Panduan instalasi di VPS Linux (aaPanel/Nginx), tuning performa PHP-FPM, dan troubleshooting. |
+| 🐳 **[Panduan Deployment Docker](./docker.md)** | Panduan menjalankan container Docker & Docker Compose all-in-one dengan persistent storage. |
+| 📜 **[Changelog](./changelog.md)** | Catatan riwayat versi, penambahan fitur baru, dan perbaikan bug dari v1.0.0 hingga v2.2.0. |
 
 ---
 

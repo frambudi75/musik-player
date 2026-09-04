@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  aura-music:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aura-music
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8080}:80"
+    volumes:
+      # Persistent local music library & extracted covers
+      - ./songs:/var/www/html/songs
+    environment:
+      - TZ=${TZ:-Asia/Jakarta}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/api/scan.php"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
