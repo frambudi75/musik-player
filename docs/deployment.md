@@ -1,131 +1,116 @@
-# Deployment & Operations Guide - Python NVR
+# Panduan Deployment & Operasional — Aura Music 🚢🎵
 
-Panduan lengkap untuk melakukan instalasi, konfigurasi, dan pemeliharaan server Python NVR di lingkungan produksi berbasis Linux / Docker.
-
----
-
-## 1. Prasyarat Sistem (*Prerequisites*)
-
-* **Sistem Operasi:** Linux (Ubuntu 20.04/22.04/24.04, Debian 11/12, atau Rocky Linux)
-* **Docker & Docker Compose:** Versi terbaru (Docker Engine 24.x+, Compose v2)
-* **Hardware Minimum:**
-  * CPU: 2 Core (Intel/AMD/ARM)
-  * RAM: 2 GB (Disarankan 4 GB untuk pemrosesan AI Multi-Kamera)
-  * Disk: SSD/HDD kapasitas sesuai kebutuhan retensi rekaman
-* **Jaringan:** IP Statis pada server dan kamera CCTV, port 5000 (Web UI) dan port 554 (RTSP).
+Dokumen ini memandu proses instalasi dan konfigurasi server produksi untuk **Aura Music Web Player** di lingkungan Linux VPS (Ubuntu/Debian) dengan Nginx dan aaPanel.
 
 ---
 
-## 2. Struktur Berkas Proyek
+## 1. Kebutuhan Sistem & Paket Dependensi
 
-```text
-nvr/
-├── app/
-│   ├── templates/
-│   │   └── index.html
-│   ├── ai_detector.py
-│   ├── cleanup.py
-│   ├── main.py
-│   ├── notifier.py
-│   ├── recorder.py
-│   └── web.py
-├── docs/
-├── recordings/          <-- Direktori rekaman lokal host
-├── config.json          <-- Konfigurasi utama
-├── docker-compose.yml
-├── Dockerfile
-└── requirements.txt
+### Paket Sistem Linux
+```bash
+# Update repository
+sudo apt-get update -y
+
+# Install dependensi audio & video
+sudo apt-get install -y ffmpeg python3 python3-pip git curl
+```
+
+### Python Package (Downloader Engine)
+```bash
+sudo pip3 install yt-dlp spotdl requests mutagen eyed3 --break-system-packages
 ```
 
 ---
 
-## 3. Konfigurasi Docker Compose
+## 2. Instalasi di aaPanel (Nginx + PHP 8.x)
 
-`docker-compose.yml`:
-```yaml
-services:
-  nvr-core:
-    build: .
-    container_name: python-nvr
-    restart: unless-stopped
-    network_mode: "host"
-    volumes:
-      - ./recordings:/recordings
-      - ./config.json:/config.json
-    environment:
-      - TZ=Asia/Jakarta
-```
+1. **Buat Website Baru:**
+   * Di dashboard **aaPanel**, buka menu **Website** -> **Add Site**.
+   * Masukkan domain Anda (misal: `musik.domainanda.com`).
+   * Pilih versi PHP **PHP-8.0** / **PHP-8.1** / **PHP-8.2** / **PHP-8.3** / **PHP-8.4**.
 
-> [!NOTE]
-> **Mengapa menggunakan `network_mode: "host"`?**  
-> `network_mode: "host"` memberikan akses jaringan langsung ke subnet kamera lokal tanpa overhead NAT Docker, mempermudah penemuan IP kamera lokal (10.x.x.x / 192.168.x.x), dan mengoptimalkan performa transfer streaming RTSP volume tinggi.
+2. **Aktifkan Fungsi `exec()` di PHP:**
+   * Buka **App Store** -> **PHP (versi aktif)** -> **Settings** -> **Disabled functions**.
+   * Temukan dan **hapus** `exec` dan `shell_exec` dari daftar disabled functions (agar fitur download YouTube dan ekstraksi cover via FFmpeg berjalan lancar).
+   * Restart PHP-FPM service.
 
----
+3. **Deploy Source Code:**
+   ```bash
+   cd /www/wwwroot/musik.domainanda.com
+   git clone https://github.com/frambudi75/musik-player.git .
+   ```
 
-## 4. Langkah Instalasi & Menjalankan
-
-### Langkah 1: Clone Repositori
-```bash
-git clone https://github.com/frambudi75/nvr-sistem.git nvr
-cd nvr
-```
-
-### Langkah 2: Siapkan Direktori Penyimpanan
-```bash
-mkdir -p recordings
-chmod -R 777 recordings
-```
-
-### Langkah 3: Build & Jalankan Kontainer
-```bash
-docker compose build --no-cache
-docker compose up -d
-```
-
-### Langkah 4: Akses Dashboard
-Buka browser dan kunjungi:
-👉 **`http://<IP_SERVER_ANDA>:5000`**
-
-* **Default Admin Login:** Username: `admin` | Password: `admin`
-* **Default Viewer Login:** Username: `viewer` | Password: `viewer`
-
-*(Segera ubah kredensial default ini di menu **User & Security** setelah login pertama kali).*
+4. **Konfigurasi Hak Akses (Permissions):**
+   ```bash
+   mkdir -p songs/covers
+   chown -R www:www /www/wwwroot/musik.domainanda.com
+   chmod -R 775 /www/wwwroot/musik.domainanda.com/songs
+   chmod -R 777 /www/wwwroot/musik.domainanda.com/songs/covers
+   ```
 
 ---
 
-## 5. Pemeliharaan & Operasional (*Maintenance*)
+## 3. Konfigurasi Nginx Web Server
 
-### 5.1. Melihat Log Kontainer
-```bash
-# Log NVR secara real-time
-docker compose logs -f --tail 50
-```
+Pastikan konfigurasi virtual host Nginx mengizinkan akses ke folder `songs/covers/` dan mendukung streaming audio *Range Requests*:
 
-### 5.2. Memeriksa Penggunaan Disk & Cache
-```bash
-# Cek ruang disk server
-df -h
+```nginx
+server {
+    listen 80;
+    listen 443 ssl http2;
+    server_name musik.domainanda.com;
+    root /www/wwwroot/musik.domainanda.com;
+    index index.php index.html;
 
-# Cek penggunaan ruang oleh Docker
-docker system df
+    # Aktifkan gzip compression untuk file teks
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml;
 
-# Membersihkan sampah build cache Docker (mereclaim belasan GB)
-docker builder prune -a -f
-```
+    # Byte-range requests untuk streaming lagu tanpa delay
+    location ~* \.(mp3|flac|wav|ogg|m4a|aac|opus)$ {
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+        add_header Accept-Ranges bytes;
+    }
 
-### 5.3. Restart / Reload Konfigurasi
-Jika Anda mengubah file `config.json` secara manual di server:
-```bash
-docker compose restart
+    # Static cover images cache
+    location ^~ /songs/covers/ {
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000, immutable";
+        try_files $uri =404;
+    }
+
+    # PHP Handler
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_pass unix:/tmp/php-cgi-84.sock; # Sesuaikan versi PHP Anda
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+
+    # Blokir akses ke file tersembunyi kecuali .well-known
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
 ```
 
 ---
 
-## 6. Panduan Troubleshooting
+## 4. Pemindaian Library Awal (Initial Scan)
 
-| Gejala Masalah | Penyebab Umum | Solusi |
+Jalankan perintah pemindaian via CLI terminal untuk mengekstrak seluruh cover dan mengompilasi cache library:
+
+```bash
+php /www/wwwroot/musik.domainanda.com/api/scan.php --refresh
+```
+
+---
+
+## 5. Pemecahan Masalah (Troubleshooting)
+
+| Gejala Masalah | Penyebab Utama | Solusi |
 | :--- | :--- | :--- |
-| **`MEDIA_ERR_SRC_NOT_SUPPORTED`** saat memutar video | Kamera menggunakan codec `H.264+` atau `H.265` yang tidak didukung browser | Matikan fitur *Smart Codec / H.264+ / H.265+* di pengaturan web IP Camera Anda. Gunakan **Standard H.264**. |
-| **Container `Restarting` berulang kali** | Konflik dependensi Python atau library OS yang hilang | Jalankan `docker compose build --no-cache` untuk memperbarui image dengan versi dependensi yang sudah dipin (`opencv-python-headless==4.9.0.80`, `numpy<2`). |
-| **`ERR_CONNECTION_REFUSED` pada port 5000** | Web server Flask belum aktif atau port terhalang firewall | Pastikan container berstatus *Running*, coba akses via `http://` (tanpa s), dan buka port: `sudo ufw allow 5000`. |
-| **Notifikasi Discord tidak terkirim** | URL Webhook salah atau server tidak memiliki akses internet outbound | Periksa koneksi internet server dan uji webhook di tab *Settings* -> *Test Notification*. |
+| **Cover lagu error 404** | Folder `songs/covers` belum dibuat atau permission belum writeable oleh user `www`. | Jalankan `chmod -R 777 songs/covers` dan scan ulang via `php api/scan.php --refresh`. |
+| **Download YouTube gagal** | Fungsi `exec()` dimatikan di PHP atau binary `yt-dlp` belum terpasang. | Hapus `exec` dari PHP Disabled Functions dan instal `pip3 install yt-dlp`. |
+| **Error `Call to undefined function mb_convert_encoding()`** | Ekstensi `php-mbstring` belum aktif di server. | Sistem sudah memiliki fallback otomatis di `api/id3.php`, atau instal via `apt install php-mbstring`. |

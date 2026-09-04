@@ -1,78 +1,71 @@
-# UI/UX Design System - Python NVR Dashboard
+# Desain UI/UX & Interaksi — Aura Music 🎨🎵
 
-Dokumen ini mendefinisikan panduan estetika, sistem desain, komponen antarmuka, dan alur interaksi pengguna (*user experience*) pada Python NVR Dashboard.
-
----
-
-## 1. Filosofi & Estetika Desain
-
-* **Dark Mode Native:** Menggunakan palet gelap bergaya *Cyber Security Command Center* untuk kenyamanan mata operator saat pemantauan 24/7.
-* **Glassmorphism & Micro-animations:** Menggunakan efek translusen halus (`backdrop-filter: blur`), gradien modern, dan transisi halus pada status interaktif.
-* **Information Hierarchy:** Informasi kritis (status rekaman, penggunaan disk, status online) selalu ditonjolkan dengan visual badges yang kontras.
+Aura Music mengusung filosofi desain modern dengan gaya visual **Dark Glassmorphism**, terinspirasi dari standar antarmuka pemutar musik kelas dunia (Spotify, Apple Music, dan Tidal).
 
 ---
 
-## 2. Palet Warna & Token Desain
+## 1. Palet Warna & Token Desain
+
+Antarmuka menggunakan sistem variabel CSS yang dinamis dan mendukung *Adaptive Ambient Glow*:
 
 ```css
 :root {
-    --bg-main: #0b0f19;         /* Latar belakang utama */
-    --bg-card: #111827;         /* Latar belakang kartu/panel */
-    --bg-input: #070a13;        /* Latar belakang input form */
-    --border: rgba(255, 255, 255, 0.08); /* Border garis halus */
-    
-    --primary: #0284c7;        /* Biru aksen utama (Sky Blue) */
-    --primary-hover: #0369a1;
-    --success: #10b981;        /* Hijau status Online / Recording */
-    --warning: #f59e0b;        /* Kuning peringatan */
-    --danger: #ef4444;         /* Merah offline / error / delete */
-    
-    --text-main: #f9fafb;      /* Teks utama (putih terang) */
-    --text-muted: #9ca3af;     /* Teks sekunder (abu-abu) */
+  /* Surface & Backgrounds */
+  --bg-main: #0b0c10;
+  --bg-card: rgba(22, 27, 34, 0.7);
+  --bg-card-hover: rgba(33, 38, 45, 0.85);
+  --bg-surface: rgba(13, 17, 23, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.08);
+
+  /* Typography */
+  --text-primary: #f0f6fc;
+  --text-secondary: #8b949e;
+  --text-tertiary: #484f58;
+
+  /* Dynamic Accents */
+  --accent-primary: #7928ca;
+  --accent-gradient: linear-gradient(135deg, #7928ca, #ff0080);
+  --accent-glow: rgba(121, 40, 202, 0.35);
+
+  /* Layout & Curves */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+  --glass-blur: blur(20px);
 }
 ```
 
 ---
 
-## 3. Komponen Utama & Interaksi
+## 2. Fitur Visual Unggulan
 
-### 3.1. Header & Navigasi Peran (RBAC)
-* **Tab Navigasi:**
-  * `Dashboard` (Semua Peran)
-  * `System Monitor` (Khusus Admin)
-  * `Settings` (Khusus Admin)
-  * `User & Security` (Khusus Admin)
-  * `System Logs` (Khusus Admin)
-* **Status Badge:** Tombol `Logout` di pojok kanan atas dengan penanda nama pengguna aktif.
+### A. Adaptive Ambient Glow
+Setiap kali lagu berganti, modul `ambient-color.js` mengekstrak warna dominan dari gambar cover album, lalu menginjeksikan nilai RGB tersebut ke `--accent-primary` dan latar belakang panggung secara halus (*smooth CSS transition*).
 
-### 3.2. Live Camera Grid & Action Cards
-* **Indikator Recording Berdenyut (*Pulse Animation*):**
-  * Titik hijau berkedip dinamis saat kamera sedang aktif menulis data ke disk.
-* **Aksi Kartu:**
-  * Tombol `View` untuk membuka modal Live Stream & Playback.
-  * Tombol `Edit` & `Delete` (Otomatis disembunyikan jika login sebagai *Viewer*).
+### B. Interactive Waveform Scrubber
+* Canvas gelombang suara interaktif yang menggambarkan dinamika amplitudo file audio.
+* Pengguna dapat mengarahkan kursor (*hover*) untuk melihat indikator waktu dan mengeklik langsung (*seek*) ke bagian bridge atau chorus lagu.
 
-### 3.3. Modal Pemutar Terpadu (Live & Playback)
+### C. Canvas Audio Visualizer
+* Dilengkapi 5 mode visualisasi frekuensi:
+  1. **Neon Bars**: Batang spektrum audio dengan gradien warna elektrik.
+  2. **Smooth Wave**: Gelombang sinus berosilasi mengikuti ritme nada.
+  3. **Circle Pulse**: Lingkaran detak jantung frekuensi bass.
+  4. **Cyber Particles**: Partikel mengambang yang meledak saat beat drop terjadi.
+  5. **Ambient Glow**: Efek pendaran cahaya lembut di sekeliling artwork.
 
-#### A. Tab Live Stream & PTZ Controller
-* **MJPEG Live Feed:** Menampilkan siaran langsung kamera dengan latensi rendah.
-* **Digital Zoom & Pan:**
-  * *Mouse Scroll Wheel:* Zoom in/out (1x hingga 5x).
-  * *Click & Drag:* Menggeser area tampilan saat dalam kondisi diperbesar.
-  * *Double Click:* Reset ke rasio normal (1x) atau langsung zoom 2x.
-* **PTZ D-Pad Controller:** Tombol navigasi 4-arah (Atas, Bawah, Kiri, Kanan) + Tombol Stop di tengah.
+---
 
-#### B. Tab Playback Timeline 24 Jam
-* **Date Selector Sidebar:** Menampilkan riwayat tanggal yang memiliki rekaman video.
-* **Visual 24-Hour Scrubber:**
-  * Garis waktu 24 jam dengan balok-balok trek biru yang merepresentasikan segmen rekaman yang ada.
-  * *Hover Tooltip:* Menampilkan jam, menit, dan detik tepat di atas kursor saat diarahkan ke timeline.
-  * *Click to Seek:* Mengklik timeline langsung melompat ke detik yang dipilih secara presisi.
-* **Video Player & Soft Error Overlay:**
-  * Otomatis memutar segmen pertama saat tanggal diklik (*Auto-Play*).
-  * Menampilkan pesan kesalahan anggun (gelap transparan) di atas kotak video jika format codec video lama tidak kompatibel, tanpa memunculkan alert browser yang mengunci layar.
+## 3. Tata Letak Responsif (Mobile & Desktop)
 
-#### C. Video Clip Exporter Drawer
-* Tombol `✂️ Export Clip` membuka panel pengunduhan klip video.
-* Input Start Time & End Time dilengkapi tombol `📍 Use Current` untuk mengambil posisi waktu video yang sedang diputar.
-* Checkbox `⚡ Fast-Forward Time-Lapse (20x Speed)` untuk mempercepat video berdurasi panjang menjadi ringkasan cepat.
+* **Desktop (1024px+)**:
+  * Sidebar navigasi kiri tetap (*sticky*).
+  * Hero Section menampilkan lagu unggulan.
+  * Tampilan ganda: Tabel Detail (*Table View*) dan Galeri Kartu (*Grid Cards*).
+  * Now Playing Bar bawah permanen dengan kontrol EQ dan scrubber gelombang.
+
+* **Mobile & Tablet (< 768px)**:
+  * Bottom Navigation Bar untuk navigasi cepat (Koleksi, Playlist, Statistik, Offline).
+  * Mini Player mengambang (*floating*) di atas navigation bar.
+  * *Fullscreen Immersive Player Modal* saat mini player disentuh, lengkap dengan penampil lirik karaoke besar dan kontrol gestur.

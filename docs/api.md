@@ -1,225 +1,224 @@
-# REST API Specification - Python NVR
+# Spesifikasi REST API — Aura Music 🔌🎵
 
-Seluruh endpoint API disajikan oleh web server Flask pada port `5000`.
-
----
-
-## 1. Konsep Dasar & Otentikasi
-
-* **Content-Type:** `application/json` (kecuali streaming dan ekspor file).
-* **Proteksi Sesi:** Pengguna wajib login terlebih dahulu via `/login` untuk mendapatkan cookie sesi.
-* **Format Error Standar:**
-  ```json
-  {
-    "status": "error",
-    "message": "Pesan deskripsi kesalahan"
-  }
-  ```
+Seluruh endpoint API Aura Music berada di bawah direktori `/api/` dan mengembalikan respons dalam format **JSON** dengan header `Content-Type: application/json`.
 
 ---
 
-## 2. Daftar Endpoint
+## 1. Pemindaian Library Audio
 
-### 2.1. Otentikasi
+### `GET /api/scan.php`
+Memindai seluruh folder `songs/` untuk mengindeks lagu, mengekstrak metadata ID3, cover album, dan lirik pendamping.
 
-#### `POST /login`
-Melakukan otentikasi pengguna dan menginisialisasi sesi.
-* **Akses:** Publik
-* **Content-Type:** `application/x-www-form-urlencoded`
-* **Body:**
-  * `username` (string): Nama pengguna
-  * `password` (string): Kata sandi
-* **Response:** Redirect ke dashboard `/` jika sukses, atau kembali ke `/login` jika gagal.
+* **Query Parameters:**
+  * `refresh` (opsional): `1` untuk memaksa scan ulang dan memperbarui cache.
 
-#### `GET /logout`
-Mengakhiri sesi dan menghapus cookie otentikasi.
-* **Akses:** `@login_required`
-
----
-
-### 2.2. Kamera & Konfigurasi
-
-#### `GET /api/cameras`
-Mengambil daftar status kamera secara real-time.
-* **Akses:** `@login_required` (Admin & Viewer)
-* **Response (200 OK):**
-  ```json
-  [
+* **Response Success (`200 OK`):**
+```json
+{
+  "status": "success",
+  "cached": true,
+  "cache_driver": "redis_memory",
+  "songs_dir": "/www/wwwroot/musik.overheat.my.id/songs",
+  "total": 68,
+  "songs": [
     {
-      "id": "cam01",
-      "name": "Kamera Depan",
-      "brand": "hikvision",
-      "ip": "10.10.0.5",
-      "status": "online",
-      "recording": true
+      "id": "track_4a0cdbe39b33a5b6f0e92823a0ff9981",
+      "title": "Headbanger!!",
+      "artist": "BABYMETAL",
+      "album": "BABYMETAL",
+      "year": "2014",
+      "genre": "J-Rock / Metal",
+      "url": "songs/BABYMETAL - Headbanger.mp3",
+      "filename": "BABYMETAL - Headbanger.mp3",
+      "cover": "songs/covers/4a0cdbe39b33a5b6.jpg",
+      "lyrics": "songs/BABYMETAL - Headbanger.lrc",
+      "size": 13223806,
+      "modified": 1725450000
     }
   ]
-  ```
-
-#### `GET /api/config`
-Mengambil seluruh isi konfigurasi sistem.
-* **Akses:** `@admin_required` (Hanya Admin)
-* **Response (200 OK):** Objek JSON `config.json`.
-
-#### `POST /api/config`
-Menyimpan dan mengaplikasikan perubahan konfigurasi sistem.
-* **Akses:** `@admin_required`
-* **Body:** Objek JSON `config.json` lengkap.
-* **Response (200 OK):**
-  ```json
-  {
-    "status": "success",
-    "message": "Configuration updated successfully."
-  }
-  ```
+}
+```
 
 ---
 
-### 2.3. Perekaman & Media Playback
+## 2. YouTube & Spotify Downloader
 
-#### `GET /api/recordings/<cam_id>`
-Mengambil daftar rekaman video yang tersedia untuk kamera tertentu, dikelompokkan berdasarkan tanggal.
-* **Akses:** `@login_required` (Admin & Viewer)
-* **Response (200 OK):**
-  ```json
-  [
+### `POST /api/yt_download.php`
+Mengunduh lagu tunggal dari YouTube dan mengonversinya ke MP3.
+
+* **Request Body (JSON):**
+```json
+{
+  "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+}
+```
+
+* **Response Success (`200 OK`):**
+```json
+{
+  "status": "success",
+  "message": "Lagu berhasil diunduh!",
+  "title": "Never Gonna Give You Up",
+  "artist": "Rick Astley",
+  "filename": "Rick Astley - Never Gonna Give You Up.mp3",
+  "file_url": "songs/Rick Astley - Never Gonna Give You Up.mp3",
+  "cover": "songs/covers/9b821a.jpg"
+}
+```
+
+---
+
+### `GET /api/playlist_info.php?url=<URL>`
+Mengambil daftar lagu yang ada di dalam URL playlist YouTube sebelum diunduh.
+
+* **Response Success (`200 OK`):**
+```json
+{
+  "status": "success",
+  "playlist_title": "Top Hits 2025",
+  "total_tracks": 15,
+  "tracks": [
     {
-      "date": "2026-08-15",
-      "files": [
-        {
-          "name": "2026-08-15_12-00-00.mp4",
-          "path": "/recordings/cam01/2026-08-15_12-00-00.mp4",
-          "size": "45.2 MB",
-          "time": "12:00:00"
-        }
-      ]
+      "id": "abc123xyz",
+      "title": "Track Name",
+      "artist": "Artist Name",
+      "duration": 215,
+      "thumbnail": "https://i.ytimg.com/vi/abc123xyz/hqdefault.jpg"
     }
   ]
-  ```
-
-#### `POST /api/recordings/export_clip`
-Memotong segmen rekaman video tertentu dari timeline dan mengunduhnya sebagai berkas MP4 tunggal.
-* **Akses:** `@login_required` (Admin & Viewer)
-* **Body:**
-  ```json
-  {
-    "cam_id": "cam01",
-    "date": "2026-08-15",
-    "start_time": "14:15:00",
-    "end_time": "14:20:00",
-    "time_lapse": false
-  }
-  ```
-* **Response (200 OK):** Binary file stream (`video/mp4`) sebagai file unduhan.
-
-#### `POST /api/storage/cleanup/run_auto`
-Memicu eksekusi aturan pembersihan otomatis (retensi hari & ruang disk minimum) secara instan.
-* **Akses:** `@admin_required`
-* **Response (200 OK):**
-  ```json
-  {
-    "status": "success",
-    "message": "Auto-cleanup triggered successfully."
-  }
-  ```
-
-#### `POST /api/storage/cleanup/manual`
-Melakukan pembersihan manual berdasarkan umur file, kamera tertentu, atau pembersihan snapshot AI alerts.
-* **Akses:** `@admin_required`
-* **Body:**
-  ```json
-  {
-    "days": 3,
-    "cam_id": "all",
-    "clear_alerts": false
-  }
-  ```
-* **Response (200 OK):**
-  ```json
-  {
-    "status": "success",
-    "deleted_files": 24,
-    "freed_mb": 1150.5,
-    "message": "Successfully deleted 24 files, freeing 1150.5 MB."
-  }
-  ```
-
-#### `DELETE /api/recordings/<cam_id>/date/<date_str>`
-Menghapus seluruh rekaman untuk kamera tertentu pada tanggal tertentu (`YYYY-MM-DD`).
-* **Akses:** `@admin_required`
-* **Response (200 OK):**
-  ```json
-  {
-    "status": "success",
-    "deleted_files": 96,
-    "freed_mb": 4200.0,
-    "message": "Deleted 96 files for date 2026-08-21 (4200.0 MB freed)."
-  }
-  ```
+}
+```
 
 ---
 
-### 2.4. Live Streaming & PTZ
+### `POST /api/spotify_download.php`
+Mengunduh lagu berdasarkan link Spotify (Track atau Playlist).
 
-#### `GET /live_stream/<cam_id>`
-Menyajikan stream langsung kamera dalam format MJPEG via HTTP multipart stream.
-* **Akses:** `@login_required` (Admin & Viewer)
-* **Response Headers:** `Content-Type: multipart/x-mixed-replace; boundary=frame`
-
-#### `POST /api/ptz`
-Mengirimkan perintah pergerakan kamera (Pan / Tilt / Zoom / Stop).
-* **Akses:** `@admin_required`
-* **Body:**
-  ```json
-  {
-    "cam_id": "cam01",
-    "action": "up"
-  }
-  ```
-* **Pilihan Action:** `up`, `down`, `left`, `right`, `zoom_in`, `zoom_out`, `stop`.
+* **Request Body (JSON):**
+```json
+{
+  "url": "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT"
+}
+```
 
 ---
 
-### 2.5. Monitoring & Notifikasi
+## 3. Metadata & Cover Art Enricher
 
-#### `GET /api/system/stats`
-Mengambil metrik performa server (CPU, Memori, Disk).
-* **Akses:** `@login_required` (Admin & Viewer)
-* **Response (200 OK):**
-  ```json
-  {
-    "cpu_usage": 3.5,
-    "memory": {
-      "total": 3.77,
-      "used": 0.85,
-      "percent": 22.5
-    },
-    "disk": {
-      "total": 49.0,
-      "used": 9.7,
-      "free": 37.3,
-      "percent": 21.0
+### `GET /api/enrich_metadata.php`
+Mencari metadata lengkap dan artwork resolusi HD (1000x1000) dari iTunes Store & MusicBrainz API.
+
+* **Query Parameters:**
+  * `title`: Judul lagu (wajib).
+  * `artist`: Nama artis (opsional).
+
+* **Response Success (`200 OK`):**
+```json
+{
+  "status": "success",
+  "cached": true,
+  "data": [
+    {
+      "title": "Bring Me To Life",
+      "artist": "Evanescence",
+      "album": "Fallen",
+      "genre": "Rock",
+      "year": "2003",
+      "cover_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/.../1000x1000bb.jpg",
+      "source": "iTunes"
     }
-  }
-  ```
+  ]
+}
+```
 
-#### `GET /api/logs`
-Mengambil baris log sistem NVR terbaru.
-* **Akses:** `@admin_required`
-* **Query Params:** `lines` (opsional, default 100)
-* **Response (200 OK):**
-  ```json
-  {
-    "logs": "2026-08-15 16:00:00 - NVR-Main - INFO - Syncing cameras..."
-  }
-  ```
+---
 
-#### `POST /api/notifications/test`
-Menguji pengiriman notifikasi test ke Discord atau Telegram.
-* **Akses:** `@admin_required`
-* **Body:**
-  ```json
-  {
-    "type": "discord"
-  }
-  ```
+### `POST /api/edit_metadata.php`
+Menyimpan perubahan tag ID3 (Judul, Artis, Album, Cover) langsung ke dalam file MP3 di server.
+
+* **Request Body (JSON / Multipart):**
+```json
+{
+  "file_path": "songs/sample.mp3",
+  "title": "Judul Baru",
+  "artist": "Artis Baru",
+  "album": "Album Baru",
+  "genre": "Pop",
+  "cover_url": "https://is1-ssl.mzstatic.com/.../1000x1000bb.jpg"
+}
+```
+
+---
+
+## 4. Audio Trimmer & Ringtone Maker
+
+### `POST /api/trim_audio.php`
+Memotong file audio pada durasi tertentu menggunakan FFmpeg.
+
+* **Request Body (JSON):**
+```json
+{
+  "file_path": "songs/sample.mp3",
+  "start_time": 45.5,
+  "end_time": 75.0,
+  "output_name": "My_Ringtone"
+}
+```
+
+* **Response Success (`200 OK`):**
+```json
+{
+  "status": "success",
+  "message": "Audio berhasil dipotong!",
+  "filename": "My_Ringtone_trimmed.mp3",
+  "url": "songs/My_Ringtone_trimmed.mp3"
+}
+```
+
+---
+
+## 5. Lirik Tersinkronisasi (.LRC)
+
+### `GET /api/lyrics_search.php`
+Mencari berkas lirik tersinkronisasi online dari database LRCLIB.
+
+* **Query Parameters:**
+  * `title`: Judul lagu.
+  * `artist`: Nama artis.
+
+---
+
+### `POST /api/save_lyrics.php`
+Menyimpan teks lirik berformat `.lrc` ke dalam folder server.
+
+* **Request Body (JSON):**
+```json
+{
+  "song_path": "songs/sample.mp3",
+  "lrc_content": "[00:12.50]Baris pertama lirik lagu\n[00:16.80]Baris kedua lirik lagu"
+}
+```
+
+---
+
+## 6. Manajemen Playlist
+
+### `GET /api/playlist.php`
+Mengambil semua playlist kustom pengguna yang tersimpan di `data_playlists.json`.
+
+### `POST /api/playlist.php`
+Membuat, memperbarui, atau menghapus playlist.
+
+* **Request Body (JSON):**
+```json
+{
+  "action": "save_all",
+  "playlists": [
+    {
+      "id": "favorites",
+      "name": "Liked Songs",
+      "song_ids": ["track_123", "track_456"]
+    }
+  ]
+}
+```

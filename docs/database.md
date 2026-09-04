@@ -1,113 +1,89 @@
-# Database & Storage Architecture - Python NVR
+# Manajemen Data & Penyimpanan — Aura Music 💾🎵
 
-Sistem Python NVR dirancang dengan arsitektur penyimpanan berbasis berkas (*Flat-file / Filesystem-based Database*) untuk memaksimalkan kecepatan I/O, portabilitas, dan kemudahan backup tanpa ketergantungan pada RDBMS seperti MySQL atau PostgreSQL.
+Aura Music dirancang dengan arsitektur penyimpanan hibrida (*Hybrid Storage Architecture*) yang sangat efisien, menggabungkan sistem file flat-file di server dengan penyimpanan binary IndexedDB di sisi browser klien.
 
 ---
 
-## 1. Struktur Hirarki Penyimpanan (`/recordings`)
+## 1. Struktur Penyimpanan Server (Flat-File & JSON)
 
-Penyimpanan rekaman menggunakan struktur folder terisolasi per kamera dengan penamaan berkas berbasis waktu standar ISO.
+Tidak memerlukan database SQL yang berat seperti MySQL atau PostgreSQL untuk beroperasi. Semua data dikelola secara cepat melalui:
 
 ```text
-/recordings/
-├── cam01/                          <-- ID Kamera unik (contoh: cam01)
-│   ├── 2026-08-15_12-00-00.mp4     <-- Segmen video 15 menit
-│   ├── 2026-08-15_12-15-00.mp4
-│   ├── 2026-08-15_12-30-00.mp4
-│   ├── ...
-│   └── alerts/                     <-- Direktori snapshot AI
-│       ├── alert_2026-08-15_13-45-10.jpg
-│       └── alert_2026-08-15_14-12-05.jpg
-│
-└── cam02/
-    ├── 2026-08-15_12-00-00.mp4
-    └── ...
+/songs/
+├── [Audio Files]               <- Berkas MP3, FLAC, WAV, M4A, AAC, Opus
+├── [Lyric Files .lrc]          <- File lirik tersinkronisasi dengan nama persis sama
+├── covers/                     <- Direktori cache thumbnail album art
+│   ├── [md5_hash].jpg          <- Gambar cover terekstrak dari tag APIC ID3
+│   └── [md5_hash].png
+└── .cache_library.json         <- Cache ringkasan JSON seluruh koleksi lagu
 ```
 
-### Konvensi Penamaan Berkas
-* **Format Berkas Video:** `YYYY-MM-DD_HH-MM-SS.mp4`
-  * Contoh: `2026-08-15_13-00-00.mp4`
-  * Waktu mewakili titik awal dimulainya segmen rekaman.
-* **Format Berkas Alert AI:** `alert_YYYY-MM-DD_HH-MM-SS.jpg`
-  * Contoh: `alert_2026-08-15_13-45-10.jpg`
-  * Gambar beranotasi kotak hijau penanda subjek yang terdeteksi.
-
----
-
-## 2. Skema Konfigurasi (`config.json`)
-
-Seluruh *state* sistem, konfigurasi kamera, otentikasi, retensi, dan notifikasi disimpan dalam satu file sentral `config.json`.
+### Format Berkas `data_playlists.json`
+Menyimpan seluruh playlist kustom pengguna dan daftar lagu yang disukai (*Liked Songs*):
 
 ```json
 {
-  "storage_path": "/recordings",
-  "segment_time": 900,
-  "retention_days": 7,
-  "smart_cleanup": {
-    "min_free_gb": 5
-  },
-  "auth": {
-    "admin_user": "admin",
-    "admin_pass": "admin",
-    "viewer_user": "viewer",
-    "viewer_pass": "viewer"
-  },
-  "cameras": [
+  "playlists": [
     {
-      "id": "cam01",
-      "name": "Kamera Depan",
-      "brand": "hikvision",
-      "ip": "10.10.0.5",
-      "port": "554",
-      "username": "admin",
-      "password": "password_cctv",
-      "rtsp_url": "rtsp://admin:password_cctv@10.10.0.5:554/Streaming/Channels/101",
-      "enabled": true,
-      "schedule": {
-        "enabled": false,
-        "start_time": "08:00",
-        "end_time": "18:00"
-      }
-    }
-  ],
-  "notifications": {
-    "discord": {
-      "enabled": true,
-      "webhook_url": "https://discord.com/api/webhooks/..."
+      "id": "favorites",
+      "name": "Liked Songs",
+      "description": "Lagu-lagu favorit pilihan Anda",
+      "cover": null,
+      "song_ids": [
+        "track_4a0cdbe39b33a5b6f0e92823a0ff9981",
+        "track_94d5185d214619bfa780d6b672ea4e64"
+      ]
     },
-    "telegram": {
-      "enabled": false,
-      "bot_token": "",
-      "chat_id": ""
+    {
+      "id": "pl_1725451200000",
+      "name": "Night Vibes Chill",
+      "description": "Playlist santai malam hari",
+      "cover": "songs/covers/night_art.jpg",
+      "song_ids": [
+        "track_08b4aa51e7b399201cbef62d9876e511"
+      ]
     }
-  }
+  ]
 }
 ```
 
-### Penjelasan Field:
-| Field | Tipe | Deskripsi |
-| :--- | :--- | :--- |
-| `storage_path` | String | Path absolut direktori penyimpanan rekaman di dalam kontainer. |
-| `segment_time` | Integer | Durasi per file rekaman dalam satuan detik (default: 900 / 15 menit). |
-| `retention_days` | Integer | Batas umur maksimal berkas rekaman sebelum dihapus otomatis. |
-| `smart_cleanup.min_free_gb` | Integer | Ambang batas sisa penyimpanan disk (GB) untuk pemicu penghapusan darurat. |
-| `auth.admin_user` / `admin_pass` | String | Kredensial untuk peran Administrator (akses penuh). |
-| `auth.viewer_user` / `viewer_pass` | String | Kredensial untuk peran Viewer (hanya lihat). |
-| `cameras[].id` | String | Pengenal unik kamera (hanya alfanumerik & underscore). |
-| `cameras[].schedule` | Object | Jadwal aktif perekaman kamera (opsional). |
-| `notifications.discord` | Object | Pengaturan Webhook Discord untuk alert dan AI snapshot. |
+---
+
+## 2. Penyimpanan Klien Browser (IndexedDB & LocalStorage)
+
+### A. IndexedDB Database (`AuraOfflineDB`)
+Digunakan untuk fitur **Offline Mode**, menyimpan berkas audio lengkap ke browser perangkat pengguna:
+
+* **Database Name**: `AuraMusicDB`
+* **Object Store**: `offline_tracks`
+* **KeyPath**: `id` (contoh: `track_4a0cdbe39b33a5b6f0e92823a0ff9981`)
+
+**Skema Record Record:**
+```javascript
+{
+  id: "track_4a0cdbe39b33a5b6f0e92823a0ff9981",
+  title: "Headbanger!!",
+  artist: "BABYMETAL",
+  album: "BABYMETAL",
+  genre: "J-Rock",
+  cover: "songs/covers/4a0cdbe.jpg",
+  blob: Blob, // Binary audio file Blob (audio/mpeg)
+  savedAt: 1725451200000,
+  size: 13223806
+}
+```
 
 ---
 
-## 3. Manajemen Sesi & Cache
+### B. LocalStorage Keys
 
-* **Session Storage:** Menggunakan *Client-side Encrypted Cookies* bawaan Flask (`app.secret_key`).
-* **Session Payload:**
-  ```json
-  {
-    "logged_in": true,
-    "username": "admin",
-    "role": "admin"
-  }
-  ```
-* **Playback Indexing:** Saat pengguna membuka tab Playback, endpoint `/api/recordings/<cam_id>` melakukan *scan* direktori lokal kamera, mem-parsing timestamp dari nama file, dan mengelompokkan berkas berdasarkan tanggal (`YYYY-MM-DD`) secara real-time tanpa memerlukan database relasional.
+| Key | Tipe Data | Deskripsi |
+| :--- | :--- | :--- |
+| `aura_cached_library` | JSON Array | Cache daftar lagu untuk pemuatan instan (0ms first render). |
+| `aura_playlists` | JSON Array | Cache playlist kustom lokal untuk sinkronisasi offline. |
+| `aura_music_stats` | JSON Object | Statistik total jam dengar, top 10 lagu, dan top 5 artis. |
+| `aura_eq_preset` | String | Nama preset equalizer yang sedang aktif (contoh: `Bass Boost`). |
+| `aura_eq_gains` | JSON Array | Nilai gain 10-band EQ kustom (-12dB s/d +12dB). |
+| `aura_dsp_speed` | Number | Kecepatan putar audio aktif (contoh: `1.0`). |
+| `aura_dsp_crossfade`| Number | Durasi crossfade antar lagu dalam detik (contoh: `3`). |
+| `aura_volume` | Number | Level volume audio (0.0 s/d 1.0). |

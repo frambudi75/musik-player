@@ -1,67 +1,53 @@
-# Product Requirements Document (PRD) - Python NVR System
+# Product Requirements Document (PRD) — Aura Music 📋🎵
 
-## 1. Pendahuluan
-**Nama Produk:** Python NVR (Network Video Recorder)  
-**Tujuan Proyek:** Menyediakan sistem perekaman dan manajemen CCTV *self-hosted* yang mandiri, berkinerja tinggi, berbeban CPU rendah (*near-zero CPU overhead*), serta dilengkapi kapabilitas modern seperti Web Dashboard terintegrasi, kontrol hak akses berbasis peran (RBAC), dan deteksi manusia berbasis AI (*Computer Vision*).
-
----
-
-## 2. Latar Belakang & Masalah yang Diselesaikan
-* **Vendor Lock-in:** NVR fisik di pasaran sering kali membatasi fitur atau mengharuskan penggunaan kamera dari merek yang sama.
-* **Overhead Tinggi:** Solusi NVR berbasis software yang ada (seperti Shinobi/Zoneminder) kerap kali terlalu berat untuk server mini atau hardware skala kecil/menengah.
-* **Kemudahan Akses & Keamanan:** Kebutuhan sistem yang mudah dimonitor via browser modern tanpa perlu plugin tambahan, aman dari akses tidak sah, dan tidak tergantung pada layanan cloud berbayar pihak ketiga.
+## 1. Ringkasan Eksekutif
+**Aura Music** adalah platform pemutar musik web mandiri (*self-hosted*) modern yang menggabungkan kemudahan akses streaming dengan privasi dan kontrol penuh atas koleksi audio lokal pengguna. Dibuat dengan arsitektur **PWA (Progressive Web App)** dan **Web Audio API DSP**, Aura Music memberikan kualitas audio audiophile, responsivitas secepat kilat, dan estetika premium yang setara dengan Spotify dan Apple Music.
 
 ---
 
-## 3. Spesifikasi & Persyaratan Teknis
-* **Backend Core:** Python 3.11
-* **Video Capture & Stream Processing:** FFmpeg (Binary direct copy)
-* **Web Framework:** Flask + Jinja2 (Embedded REST API & Server-Sent Events)
-* **Computer Vision / AI Engine:** OpenCV (`cv2.HOGDescriptor`) + NumPy
-* **Notifikasi:** Discord Webhook (Multipart image upload) & Telegram Bot API
-* **Containerization:** Docker & Docker Compose (`network_mode: host`)
-* **Storage Hierarchy:** Local filesystem-based storage (`/recordings`)
+## 2. Tujuan Produk (Goals)
+1. **Zero-Latency Audio Playback**: Pemutaran audio instan dengan caching client-side 0ms dan streaming bitstream native.
+2. **True Audiophile Customization**: Memberikan kontrol grafis 10-band equalizer, 8D/3D spatial audio, dan audio effects langsung di browser tanpa plugin tambahan.
+3. **All-in-One Audio Management**: Memungkinkan pengguna untuk mengunduh lagu dari YouTube/Spotify, memotong audio, mengedit metadata ID3, dan membuat lirik karaoke `.lrc` dalam satu antarmuka terpadu.
+4. **Offline Resilience**: Memungkinkan pemutaran lagu tanpa jaringan internet menggunakan IndexedDB Blob caching dan Service Worker.
 
 ---
 
-## 4. Fitur Utama Sistem
+## 3. Fitur Utama & Kebutuhan Fungsional
 
-### 4.1. Core Recording Engine (Direct Stream Copy)
-* Menangkap stream RTSP kamera CCTV (TCP mode untuk mencegah packet loss).
-* Melakukan perekaman tanpa *transcoding/re-encoding* (`-c copy`), menghemat 95%+ utilisasi CPU.
-* Pemotongan segmen video otomatis (default: 15 menit / 900 detik per chunk MP4).
-* Penamaan file terstruktur berbasis timestamp: `YYYY-MM-DD_HH-MM-SS.mp4`.
-* Direktori terisolasi per kamera: `/recordings/{cam_id}/{filename}`.
+### 3.1. Web Audio Engine & DSP
+* **10-Band Graphic Equalizer**: Rentang frekuensi 32Hz, 64Hz, 125Hz, 250Hz, 500Hz, 1kHz, 2kHz, 4kHz, 8kHz, 16kHz dengan gain -12dB s/d +12dB.
+* **DSP Presets**: 10 preset bawaan (Flat, Bass Boost, Treble Boost, Vocal, Acoustic, Rock, Pop, Electronic, Jazz, Classical).
+* **3D / 8D Spatial Audio**: Simulasi panning audio melingkar 360 derajat menggunakan `StereoPannerNode` / `PannerNode` dengan rotasi berkecepatan dinamis.
+* **Audio Speed & Nightcore**: Pengubahan playback rate dari 0.5x hingga 2.0x dengan kompensasi pitch.
+* **Seamless Crossfade**: Transisi antar lagu otomatis 0-10 detik untuk menghindari jeda keheningan.
 
-### 4.2. Web Dashboard & Live Monitor
-* **Multi-Camera Grid:** Tampilan grid interaktif status rekaman dan informasi kamera (IP, Brand, ID).
-* **Live View (MJPEG Proxy):** Pemantauan streaming langsung dari RTSP ke MJPEG browser.
-* **PTZ Controls:** Kontrol arah kamera (Pan/Tilt/Zoom/Stop) via ONVIF/CGI API kamera.
+### 3.2. Visual & Antarmuka (UI/UX)
+* **Glassmorphism Dark Theme**: Tampilan transparan modern dengan efek *frosted glass*, blur dinamis, dan tipografi modern.
+* **Adaptive Ambient Glow**: Ekstraksi warna dominan dari cover album secara real-time untuk menghasilkan efek cahaya latar belakang panggung.
+* **Interactive Waveform Scrubber**: Canvas waveform yang menampilkan puncak amplitudo audio untuk navigasi posisi lagu yang presisi.
+* **Real-time Canvas Visualizer**: 5 mode animasi visualizer audio yang merespons frekuensi bass, mid, dan treble secara instan.
 
-### 4.3. Interactive Playback & Media Tools
-* **Visual Timeline Scrubber:** Penjelajah rekaman 24 jam dengan track segmen warna-warni dan *hover time indicator*.
-* **Seamless Auto-Play:** Pemutaran segmen rekaman secara berkesinambungan.
-* **Graceful Error Overlay:** Penanganan error codec otomatis tanpa mengunci browser (soft UI overlay).
-* **Digital Zoom & Pan:** Kemampuan zoom in/out (hingga 5x) dan *drag-to-pan* langsung pada video rekaman dan live stream.
-* **Video Clip Exporter:** Pemotongan klip rekaman dengan *range selector* (Start & End) dan fitur *Time-Lapse* (20x Fast Forward) langsung menjadi file MP4 unduhan.
+### 3.3. Downloader & Studio Suite
+* **YouTube & Spotify Downloader**: Input URL video, playlist, atau track Spotify untuk diunduh otomatis dengan tag ID3 lengkap dan cover art HD.
+* **Audio Trimmer**: Pemotong file audio dengan visual slider gelombang untuk mengekspor klip ringtone `.mp3`.
+* **Synchronized LRC Studio**: Pembuat berkas lirik `.lrc` interaktif dengan penanda waktu (*timestamping*) sekali klik pada ketukan lagu.
+* **ID3 Tag & Metadata Enricher**: Pembaruan judul, artis, album, genre, serta pencarian cover resolusi tinggi otomatis via iTunes Store API.
 
-### 4.4. AI Human Detection & Discord Alerts
-* **Background Worker:** Analisis frame RTSP berkala (1 frame per 2 detik) untuk menjaga CPU tetap dingin.
-* **HOG Descriptor:** Deteksi siluet manusia dengan *confidence filtering*.
-* **Snapshot Annotation:** Menandai target manusia dengan kotak hijau (*bounding box*) dan menyimpan ke `/recordings/{cam_id}/alerts/`.
-* **Discord Rich Alert:** Mengirimkan notifikasi instan ke webhook Discord beserta **lampiran foto bukti** deteksi.
-* **Rate Limiting / Cooldown:** Anti-spam 60 detik per kamera.
+### 3.4. PWA & Manajemen Playlist
+* **PWA & MediaSession API**: Dukungan install di home screen, background playback di mobile, dan integrasi tombol media lockscreen.
+* **IndexedDB Offline Engine**: Penyimpanan berkas audio utuh ke browser untuk pemutaran tanpa koneksi internet.
+* **Custom Playlists & Favorit**: Pembuatan dan pengelolaan playlist tanpa batas dengan sinkronisasi ke server `data_playlists.json`.
+* **Personal Music Statistics**: Pelacak total jam mendengarkan, lagu yang paling sering diputar, dan artis terfavorit.
 
-### 4.5. Security & Role-Based Access Control (RBAC)
-* **Session-Based Authentication:** Login terenkripsi dengan proteksi API.
-* **Admin Role:** Akses penuh ke seluruh fitur, konfigurasi kamera, manajemen user, jadwal, dan penghapusan data.
-* **Viewer Role:** Hak akses terbatas (hanya bisa melihat Live View dan memutar rekaman Playback), menu Settings/System/Users disembunyikan.
+---
 
-### 4.6. Auto-Cleanup & Smart Storage Management
-* **Time-based Retention:** Penghapusan rekaman otomatis yang telah melebihi batas waktu (misal: 7 hari).
-* **Smart Disk Headroom:** Pemicu penghapusan darurat jika sisa ruang disk menipis di bawah batas aman (`min_free_gb`).
+## 4. Kebutuhan Non-Fungsional
 
-### 4.7. Auto-Healing & Fault Tolerance
-* Mendeteksi stream RTSP kamera yang terputus atau offline.
-* Mekanisme *Auto-Reconnect* berkala secara mandiri di background.
-* Fail-safe engine: jika library AI bermasalah, modul perekam dan web dashboard tetap berjalan normal.
+| Aspek | Target Spesifikasi |
+| :--- | :--- |
+| **Kecepatan First Render** | < 100ms via instant localStorage cache pre-warming |
+| **Konsumsi Memori Browser** | < 80MB RAM saat memutar audio dan merender visualizer 60 FPS |
+| **Kompatibilitas Browser** | Chrome 80+, Edge 80+, Safari 14+, Firefox 75+, Android Chrome, iOS Safari |
+| **Kapasitas Library** | Mampu mengindeks hingga 10.000+ lagu tanpa lag menggunakan pagination & virtualized rendering |
+| **Server Footprint** | Sangat ringan, menggunakan Pure PHP tanpa dependensi framework berat |

@@ -1,126 +1,132 @@
-# System Architecture - Python NVR
+# Arsitektur Sistem — Aura Music 🏛️🎵
 
-Dokumen ini mendokumentasikan arsitektur teknis, aliran data, dan interaksi antarkomponen di dalam sistem Python NVR.
+Dokumen ini menjelaskan arsitektur teknis lengkap **Aura Music Web Player**, mulai dari alur pemrosesan Web Audio API, struktur modular JavaScript di sisi klien, hingga arsitektur backend PHP dan worker downloader Python.
 
 ---
 
 ## 1. Diagram Arsitektur Tingkat Tinggi
 
-```mermaid
-graph TB
-    subgraph IP Cameras [Kamera CCTV IP]
-        CAM1[Kamera Depan - RTSP]
-        CAM2[Kamera Belakang - RTSP]
-    end
-
-    subgraph Host / Docker Container [Python NVR Runtime]
-        direction TB
-        
-        CONFIG[(config.json)]
-        
-        MAIN[main.py: NVRManager Orchestrator]
-        
-        subgraph Workers [Background Worker Threads]
-            REC[recorder.py: FFmpeg Process per Cam]
-            AI[ai_detector.py: OpenCV HOG Human Detector]
-            CLEAN[cleanup.py: Retention & Smart Headroom Cleaner]
-        end
-        
-        subgraph Web Layer [Web & API Layer]
-            FLASK[web.py: Flask Server / Port 5000]
-            RBAC[RBAC Guard: Admin / Viewer]
-            MJPEG[MJPEG Live Streamer]
-            EXPORTER[Clip Exporter Engine]
-        end
-        
-        STORAGE[("/recordings/ Volume Storage")]
-    end
-
-    subgraph External Clients & Services
-        BROWSER[Web Browser Client UI]
-        DISCORD[Discord Webhook API]
-        TELEGRAM[Telegram Bot API]
-    end
-
-    CONFIG --> MAIN
-    MAIN --> REC
-    MAIN --> AI
-    MAIN --> CLEAN
-    MAIN --> FLASK
-
-    CAM1 -.->|RTSP Stream| REC
-    CAM2 -.->|RTSP Stream| REC
-    CAM1 -.->|RTSP Sampling| AI
-    
-    REC -->|Direct Stream Copy MP4| STORAGE
-    AI -->|Save Alert Snapshot| STORAGE
-    AI -->|Send Image Payload| DISCORD
-    CLEAN -->|Prune Old Files| STORAGE
-
-    FLASK --> RBAC
-    RBAC --> BROWSER
-    STORAGE --> FLASK
-    EXPORTER --> BROWSER
-    MJPEG --> BROWSER
+```text
++-----------------------------------------------------------------------------------+
+|                                  BROWSER (CLIENT)                                 |
+|                                                                                   |
+|   +---------------------------------------------------------------------------+   |
+|   |                           USER INTERFACE (HTML5/CSS3)                     |   |
+|   |    Hero Featured | Song Table / Grid | Visualizer | Immersive Lyrics      |   |
+|   +---------------------------------------------------------------------------+   |
+|         ^                     ^                      ^                 ^          |
+|         |                     |                      |                 |          |
+|   +-------------+     +---------------+      +---------------+   +------------+   |
+|   | App Manager |     | Playlist &    |      | Lyrics Engine |   | Ambient    |   |
+|   |  (app.js)   |     | Stats Manager |      |  (lyrics.js)  |   | Color FX   |   |
+|   +-------------+     +---------------+      +---------------+   +------------+   |
+|         |                     |                                                   |
+|         v                     v                                                   |
+|   +---------------------------------------+      +----------------------------+   |
+|   |         AUDIO ENGINE (audio-core.js)  |      |   OFFLINE ENGINE (IndexedDB|   |
+|   |  Web Audio Context -> DSP FX Graph    |      |    & Service Worker sw.js) |   |
+|   +---------------------------------------+      +----------------------------+   |
+|         |                                                      ^                  |
++---------|------------------------------------------------------|------------------+
+          | Audio Stream / Range Requests                        | REST API (JSON)
+          v                                                      v
++-----------------------------------------------------------------------------------+
+|                             BACKEND SERVER (PHP 8 + NGINX)                        |
+|                                                                                   |
+|   +-----------------------+   +-----------------------+   +-------------------+   |
+|   | Scan & ID3 Extractor  |   | Downloader Controller |   | Audio Trimmer &   |   |
+|   | (scan.php, id3.php)   |   | (yt_download.php)     |   | Metadata Editor   |   |
+|   +-----------------------+   +-----------------------+   +-------------------+   |
+|               |                           |                         |             |
+|               v                           v                         v             |
+|   +-----------------------+   +-----------------------+   +-------------------+   |
+|   | Pure PHP ID3 Parser   |   | Python 3 + yt-dlp /   |   | FFmpeg Trimmer &  |   |
+|   | & Disk Cover Cache    |   | spotdl Worker Engine  |   | mutagen ID3 Inject|   |
+|   +-----------------------+   +-----------------------+   +-------------------+   |
+|               |                           |                         |             |
+|               +---------------------------+-------------------------+             |
+|                                           |                                       |
+|                                           v                                       |
+|                         STORAGE DIRECTORY: /songs/                                |
+|                         - Audio Files (.mp3, .flac, .wav)                         |
+|                         - Synchronized Lyrics (.lrc)                              |
+|                         - Album Covers Cache (/songs/covers/*.jpg/png)            |
++-----------------------------------------------------------------------------------+
 ```
 
 ---
 
-## 2. Komponen Utama
+## 2. Web Audio API Pipeline (DSP Audio Graph)
 
-### 2.1. NVR Orchestrator (`app/main.py`)
-* **Tanggung Jawab:** Inisialisasi konfigurasi, manajemen daur hidup (*lifecycle*) thread, sinkronisasi kamera dinamis, dan penanganan sinyal terminasi (*graceful shutdown*).
-* **Mekanisme Sync:** Secara periodik membaca `config.json` dan jadwal aktif (*schedule*). Menghidupkan atau mematikan worker `Recorder` dan `AIDetector` sesuai status kamera yang diubah di Web UI.
-* **Fail-Safe Mechanism:** Membungkus import modul AI (`ai_detector.py`) dalam blok `try...except` agar kegagalan library Computer Vision tidak menggagalkan fungsi utama perekam dan web dashboard.
+Suara diproses secara berurutan melalui node Web Audio API sebelum dikeluarkan ke speaker:
 
-### 2.2. Stream Recorder Engine (`app/recorder.py`)
-* **Tanggung Jawab:** Menjalankan dan mengawasi proses biner FFmpeg per kamera.
-* **FFmpeg Pipeline Parameters:**
-  ```bash
-  ffmpeg -rtsp_transport tcp -i <rtsp_url> \
-         -c copy -map 0 \
-         -f segment -segment_time 900 -reset_timestamps 1 \
-         -strftime 1 "/recordings/<cam_id>/%Y-%m-%d_%H-%M-%S.mp4"
-  ```
-* **Karakteristik Kunci:**
-  * **Direct Stream Copy (`-c copy`):** Tanpa proses re-encoding, bitstream H.264/H.265 langsung ditulis ke disk, beban CPU < 1% per stream.
-  * **TCP Transport (`-rtsp_transport tcp`):** Mencegah korupsi frame akibat packet drop UDP pada jaringan lokal.
-  * **Health Check & Auto-Restart:** Memeriksa `poll()` status proses FFmpeg. Jika kamera putus, status ditandai offline dan proses direstart otomatis.
-
-### 2.3. AI Human Detector (`app/ai_detector.py`)
-* **Tanggung Jawab:** Pemrosesan computer vision di background untuk mendeteksi keberadaan orang pada area kamera.
-* **Alur Kerja:**
-  1. Menghubungkan stream sekunder atau stream utama via OpenCV `cv2.VideoCapture(rtsp_url)`.
-  2. Melakukan *frame skipping* (hanya memproses 1 frame setiap 2 detik).
-  3. Frame di-*resize* ke 640x360 untuk akselerasi komputasi.
-  4. Deteksi menggunakan `cv2.HOGDescriptor` dengan SVM People Detector.
-  5. Menghitung *confidence score* (ambang batas > 0.5).
-  6. Menggambar *bounding box* hijau pada frame resolusi asli, menyimpan snapshot ke `/recordings/{cam_id}/alerts/`.
-  7. Menembakkan *multipart POST request* ke Discord Webhook dengan menyertakan file gambar JPEG.
-  8. Menjalankan *cooldown timer* (60 detik) per kamera untuk mencegah notifikasi beruntun.
-
-### 2.4. Smart Storage Cleaner (`app/cleanup.py`)
-* **Tanggung Jawab:** Manajemen ruang penyimpanan dan retensi data.
-* **Thread Loop:** Berjalan setiap 1 jam sekali.
-* **Aturan Pembersihan:**
-  1. **Time-Based Retention:** Menghapus file rekaman yang usia modifikasinya (`mtime`) melebihi `retention_days`.
-  2. **Smart Headroom Protection:** Memeriksa sisa ruang disk (`shutil.disk_usage`). Jika sisa ruang < `min_free_gb` (default 5GB), sistem akan menghapus file tertua secara berurutan hingga sisa ruang kembali di atas batas aman.
-
-### 2.5. Web Server & API Layer (`app/web.py`)
-* **Tanggung Jawab:** Menyajikan UI Dashboard, endpoint REST API, otentikasi sesi, stream proxy MJPEG, dan ekspor klip video.
-* **Proteksi Endpoint:**
-  * `@login_required`: Memastikan pengguna telah terautentikasi.
-  * `@admin_required`: Memastikan peran pengguna adalah `admin` untuk endpoint mutasi (Settings, Add/Edit/Delete Camera, Storage Cleanup, User Management).
-* **Live Streaming Proxy:** Membaca stream RTSP via FFmpeg dan mengonversi secara *on-the-fly* menjadi multipart HTTP stream (`multipart/x-mixed-replace`) untuk rendering tag `<img>` di browser.
-* **Clip Exporter:** Memotong rentang waktu video tertentu menggunakan FFmpeg dengan opsi *Time-Lapse* (filter `setpts=0.05*PTS`) dan mengembalikan file MP4 langsung ke browser.
+```text
+[ <audio> Element Source ]
+            │
+            ▼
+    [ MediaElementAudioSourceNode ]
+            │
+            ▼
+    [ 10-Band BiquadFilterNode Array ]  <--- Equalizer (32Hz ... 16kHz)
+            │
+            ▼
+    [ StereoPannerNode ]                 <--- 3D / 8D Spatial Audio Rotation
+            │
+            ▼
+    [ GainNode (Crossfade & Master Vol) ]
+            │
+            ├────────────────────────────────────────┐
+            ▼                                        ▼
+    [ AnalyserNode (FFT) ]                 [ AudioDestinationNode ]
+            │                                 (Speakers / Headphones)
+            ▼
+    [ Visualizer & Waveform Canvas ]
+```
 
 ---
 
-## 3. Topologi Jaringan & Protokol
+## 3. Modul Komponen Frontend (Client-Side)
 
-| Komponen | Protokol | Port | Keterangan |
-| :--- | :--- | :--- | :--- |
-| IP Camera -> NVR | RTSP (TCP) | 554 | Pengambilan stream video H.264 |
-| Browser -> NVR Dashboard | HTTP | 5000 | Web UI, REST API, Playback, MJPEG |
-| NVR -> Discord API | HTTPS | 443 | Pengiriman notifikasi alert + gambar |
-| NVR -> IP Camera (PTZ) | HTTP / CGI | 80 / 8000 | Kontrol pergerakan arah kamera |
+1. **`audio-core.js` (`AudioCore`)**:
+   - Mengelola `AudioContext`, `HTMLAudioElement`, dan rantai filter EQ 10-band.
+   - Mengatur efek 8D spatial rotasi menggunakan interval sudut sinus/kosinus secara mulus.
+   - Menghitung crossfade antar lagu secara bertahap saat lagu hampir selesai.
+
+2. **`playlist.js` (`PlaylistManager`)**:
+   - Mengelola antrean lagu (*queue*), riwayat putar (*history*), shuffle, dan repeat modes.
+   - Menyimpan dan menyinkronkan playlist pengguna ke server (`api/playlist.php`) dan `localStorage`.
+   - Merekam statistik waktu dengar harian, track teratas, dan artis favorit.
+
+3. **`lyrics.js` (`LyricsEngine`)**:
+   - Mem-parsing string berkas `.lrc` menjadi array objek `{ time, text }`.
+   - Menggunakan interpolasi biner untuk mencocokkan baris lirik aktif dengan waktu putar audio.
+   - Melakukan scroll otomatis yang halus pada container lirik di mode desktop dan fullscreen.
+
+4. **`visualizer.js` (`AudioVisualizer`)**:
+   - Mengambil data frekuensi dari `AnalyserNode.getByteFrequencyData()`.
+   - Merender animasi Canvas 60 FPS dengan 5 mode visualisasi (Neon Bars, Waveform, Circle, Particles, Glow).
+
+5. **`ambient-color.js` (`AmbientColor`)**:
+   - Menggunakan Canvas tersembunyi untuk mengambil sampel warna piksel dari cover album lagu yang aktif.
+   - Mengubah CSS Custom Properties (`--accent-primary`, `--ambient-glow`) secara dinamis.
+
+6. **`offline-storage.js` (`OfflineDB`)**:
+   - Menggunakan IndexedDB untuk menyimpan file audio dalam format `Blob`.
+   - Menghasilkan URL Blob lokal (`URL.createObjectURL(blob)`) saat aplikasi offline.
+
+---
+
+## 4. Arsitektur Backend (Server-Side)
+
+* **Pure PHP ID3 Extractor (`api/id3.php`)**:
+  * Membaca tag ID3v2 secara langsung dari file binary MP3 tanpa ketergantungan library eksternal.
+  * Mendeteksi header gambar APIC (JPEG/PNG) dengan pembacaan *magic bytes* (`\xFF\xD8\xFF` dan `\x89PNG`) untuk mengekstrak cover art ke direktori `songs/covers/`.
+  * Memiliki fallback encoding otomatis (`iconv` / native parser) jika ekstensi `mbstring` tidak aktif di server.
+
+* **High-Performance Caching (`api/cache_helper.php` & `api/scan.php`)**:
+  * Menyimpan hasil pemindaian library ke berkas JSON terkompresi dan Redis/APCu memory cache.
+  * Mendukung HTTP ETag dan header `If-None-Match` (304 Not Modified) untuk menghemat bandwidth server hingga 99%.
+
+* **Downloader Worker (`api/downloader.py` & `api/yt_download.php`)**:
+  * Mengeksekusi `yt-dlp` di background dengan pengaturan penamaan file yang aman.
+  * Otomatis mengonversi audio ke MP3 320kbps via FFmpeg dan menginjeksi tag ID3 serta cover art resolusi tinggi.
