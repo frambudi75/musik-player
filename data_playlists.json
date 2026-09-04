@@ -1,0 +1,104 @@
+{
+    "playlists": [
+        {
+            "id": "favorites",
+            "name": "Liked Songs",
+            "description": "Lagu-lagu favorit pilihan Anda",
+            "created_at": 1788523306,
+            "song_ids": [
+                "track_1eff001e3a6ef94044c4621075a7474f"
+            ]
+        },
+        {
+            "id": "pl_1788523934382",
+            "name": "touring",
+            "description": "",
+            "created_at": 1788523934,
+            "song_ids": [
+                "track_1eff001e3a6ef94044c4621075a7474f",
+                "track_a6df5ee444408b0b63c46507ff68e961",
+                "track_8769bd298bf3146ecb85551112aaef71"
+            ]
+        },
+        {
+            "id": "pl_1788530036316",
+            "name": "Touring",
+            "description": "Di-import dari YouTube",
+            "created_at": 1788530036,
+            "song_ids": [
+                "track_8769bd298bf3146ecb85551112aaef71",
+                "track_49e07ec84823454dda53d9538646eb9f",
+                "track_2ed273804577b1ee56d0ea02c6590368",
+                "track_884c5584b40b4e192c4da29a61f169aa",
+                "track_8e7ce4a3e8f8aec89789cb8a667e1f80",
+                "track_e76ca97398e34366d035d4676ef806c7",
+                "track_90f70811355539865fba68100697414d",
+                "track_626bb96e5e4a794a71f1178e05359b12",
+                "track_b50024a7a34c996c254f7dbc723d1f48",
+                "track_f0953e3c0d8ab29c8c5adad2fbab0541",
+                "track_012d7d8a3a5ab707d2bbdbf9a83e3857",
+                "track_201afc8b5f85da80e3082d7a9716808a",
+                "track_932949401634c681409215192263ef5b",
+                "track_4d351f7318de48ed9f48652fa334ea5c",
+                "track_85c1abb92e1ad3841fdd2c9620cc67fa",
+                "track_e24dd21ec8d4985527f977d68f0ff371",
+                "track_dc0277a140066e403933fa0412b155ce",
+                "track_7de9e8b4d930c4e1a0be517d3809d242",
+                "track_d1b50119f8dbbc2deee6c4ee68237136",
+                "track_4871964e5061311e33888834c3ee0e1b",
+                "track_41ee5cd2f2703616b78a060408a17db8",
+                "track_22b0d00fbc4dea393931a57420116242",
+                "track_75467b319ca59cf07a4fbc06d8d3ea9f",
+                "track_a2846ff82464fc46d8615f9a7351893a",
+                "track_cca863435750dbd6cb2eceff80797e76",
+                "track_1909b103197a691ff3d4c11be6e8968b",
+                "track_7207f9da328c60cc54f185b0b6c26845",
+                "track_ce9591c321b957d62e81d3d34a90e1a9",
+                "track_000b770bf0700c09fe50438ced099e92",
+                "track_c0352de3bd1cf135840fc251dea03bef",
+                "track_e2260c00cd7c8aecfca0d206fda40407",
+                "track_c3280c3b597dda7082358efc9cd52b2f",
+                "track_897e89059f8ced0066c02efde3024200",
+                "track_af753decb9e57ba76628eff08b57ea72",
+                "track_51d5d8173f3709ef5e195950b222e8bd",
+                "track_bbaa937611d5e18573e46dbc61d6001d",
+                "track_dc6118df4df4d1d1e9fa0839a03e9096",
+                "track_a487d769a6d45636d5b4200ba453d390",
+                "track_d2e0461b288afa60dda23fb2245fe54a",
+                "track_51b15671987c88583d65216ff0ef8bbe",
+                "track_4688810f0c4f59ec76a6f941df703cdc",
+                "track_9e0ff7ba0d8f0acde4145f607f5162cd",
+                "track_8e18033405a3639e4ef525af41f6ea80",
+                "track_ce570f89eaf5cd8a2462beae0f8e1de6",
+                "track_71fe77a5644aba834ae34c76a950851a",
+                "track_7dc2e497fc42c095206dd3a2c02c658c"
+            ]
+        },
+        {
+            "id": "pl_1788530449372",
+            "name": "jedak jeduk",
+            "description": "Di-import dari YouTube",
+            "created_at": 1788530449,
+            "song_ids": [
+                "track_64b9be75b731570010feba3fdb356c79",
+                "track_37a7840656de4c7f98949d2dd56dc638",
+                "track_f89b0c203ef7d2512f2b4dde7adf70e6",
+                "track_afc1f465d1deb54d3cdd6b9fb30bc553",
+                "track_b3215046948dfe6fe1b3b80f96ef3200",
+                "track_399f012334a065a7b322a789feeec203",
+                "track_e104d0ac0f7555699847faa44f94a7ad",
+                "track_fb8048f7321602c2d5ee8135e24edc50",
+                "track_a1b96363ae92e47ddadacdc0e15593bd",
+                "track_0df68dfa5e281240e2b61f7badf0af04",
+                "track_b99647c0d66ec639465fff241f4dbefa",
+                "track_9190ece9854f4e2afde07d9310c3f112",
+                "track_cb9a4c985ebe77dce200ec55654f461a",
+                "track_83fd35c1a52717105f366ab9168e0187",
+                "track_aced20bb7ab7ab907cff37525967063d",
+                "track_b550024e48cdfd40e1c4815e8efef287",
+                "track_9e0ff7ba0d8f0acde4145f607f5162cd"
+            ]
+        }
+    ],
+    "history": []
+}

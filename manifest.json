@@ -1,0 +1,32 @@
+{
+  "name": "Aura Music - Personal Audio Player",
+  "short_name": "Aura Music",
+  "description": "Personal High-Fidelity Music Player with Dynamic Ambient Glow, Realtime Synced Lyrics, and 10-Band Graphic Equalizer",
+  "start_url": "./index.php",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#08090d",
+  "theme_color": "#0f121a",
+  "categories": ["music", "entertainment", "audio"],
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

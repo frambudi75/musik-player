@@ -1,0 +1,25 @@
+# Aura Music Web Player - .gitignore
+
+# Dependencies & temporary files
+/node_modules/
+/vendor/
+*.log
+.DS_Store
+Thumbs.db
+
+# Dynamic runtime caches
+/songs/.cache/
+/songs/.covers/
+/songs/.cache_library.json
+
+# Audio library (ignore user-uploaded audio & generated covers except sample)
+/songs/*.mp3
+/songs/*.m4a
+/songs/*.flac
+/songs/*.aac
+/songs/*.opus
+/songs/covers/*
+!/songs/covers/.gitkeep
+!/songs/.gitkeep
+!/songs/Midnight_Aura_Ambient.wav
+!/songs/Midnight_Aura_Ambient.lrc

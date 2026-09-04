@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="artGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="50%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#artGrad)" rx="16"/>
+  <circle cx="200" cy="200" r="100" fill="none" stroke="#334155" stroke-width="2" stroke-dasharray="6 6"/>
+  <circle cx="200" cy="200" r="60" fill="#0f172a" stroke="#475569" stroke-width="3"/>
+  <circle cx="200" cy="200" r="18" fill="#3b82f6"/>
+  <path d="M190 170 L220 200 L190 230 Z" fill="#ffffff" opacity="0.9"/>
+  <text x="200" y="340" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="14" font-weight="600" fill="#94a3b8" letter-spacing="2">AURA MUSIC AUDIO</text>
+</svg>
