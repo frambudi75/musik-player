@@ -114,11 +114,29 @@ try {
         $ext = strtolower($file->getExtension());
         if (in_array($ext, $allowedExtensions)) {
             $fileName = $file->getFilename();
-            $fileSize = $file->getSize();
-            $fileMtime = $file->getMTime();
+
+            // Auto-heal unsafe filename on disk (e.g. '#' or '?' or '%' which cuts off web requests)
+            if (preg_match('/[#\?%]/', $fileName)) {
+                $cleanName = preg_replace('/[#\?%]/', '_', $fileName);
+                $cleanName = trim(preg_replace('/\s+/', ' ', $cleanName));
+                $newPath = dirname($realPath) . DIRECTORY_SEPARATOR . $cleanName;
+                if (!file_exists($newPath) && @rename($realPath, $newPath)) {
+                    // Rename associated .lrc if present
+                    $oldLrc = dirname($realPath) . DIRECTORY_SEPARATOR . pathinfo($fileName, PATHINFO_FILENAME) . '.lrc';
+                    $newLrc = dirname($realPath) . DIRECTORY_SEPARATOR . pathinfo($cleanName, PATHINFO_FILENAME) . '.lrc';
+                    if (file_exists($oldLrc) && !file_exists($newLrc)) {
+                        @rename($oldLrc, $newLrc);
+                    }
+                    $realPath = $newPath;
+                    $fileName = $cleanName;
+                }
+            }
+
+            $fileSize = @filesize($realPath);
+            $fileMtime = @filemtime($realPath);
 
             // Skip zero byte ghost files
-            if ($fileSize === 0) continue;
+            if ($fileSize === false || $fileSize === 0) continue;
 
             $relPath = str_replace('\\', '/', substr($realPath, strlen(realpath($songsDir)) + 1));
             $encodedRelPath = implode('/', array_map('rawurlencode', explode('/', $relPath)));

@@ -3141,6 +3141,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (healthHealthyVal) healthHealthyVal.textContent = data.healthy_count;
         if (healthBrokenVal) healthBrokenVal.textContent = data.broken_count;
 
+        if (data.renamed_count > 0) {
+          showToast(`Otomatis memperbaiki ${data.renamed_count} nama file berkarakter khusus (#/?) di disk server!`, '✨');
+          fetchLibrary(true);
+        }
+
         if (data.broken_count > 0) {
           if (healthBrokenListWrap) healthBrokenListWrap.style.display = 'block';
           if (healthAllGoodMsg) healthAllGoodMsg.style.display = 'none';
@@ -3153,8 +3158,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (healthBrokenList) {
             healthBrokenList.innerHTML = currentBrokenSongs.map(s => `
               <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem;">
-                <span style="color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 65%;">${escapeHTML(s.filename)}</span>
-                <span style="color: #ef4444; font-size: 0.72rem;">${escapeHTML(s.reason)}</span>
+                <span style="color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%;">${escapeHTML(s.title || s.filename)}</span>
+                <span style="color: #ef4444; font-size: 0.72rem; max-width: 38%; text-align: right;">${escapeHTML(s.reason)}</span>
               </div>
             `).join('');
           }
