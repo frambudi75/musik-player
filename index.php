@@ -218,6 +218,12 @@
               </svg>
               <span>Scan Folder</span>
             </button>
+            <button class="btn-subtle-scan" id="health-check-btn" title="Cek & perbaiki lagu rusak" style="border-color: rgba(34, 197, 94, 0.3);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+              </svg>
+              <span>Cek Kesehatan Lagu</span>
+            </button>
           </div>
           <div class="view-toggle">
             <button class="view-btn active" data-view="table" title="Tampilan Tabel">
@@ -1095,6 +1101,48 @@
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toast-container"></div>
 
+
+  <!-- Audio Library Health Doctor Modal -->
+  <div class="modal-overlay" id="health-modal">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title">🩺 Cek Kesehatan Library Lagu</h3>
+        <button class="modal-close-btn" id="health-close-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 10px 0 0;">
+        <div id="health-status-wrap" style="text-align: center; padding: 24px 0;">
+          <div style="font-size: 2.5rem; margin-bottom: 8px;">⏳</div>
+          <p style="color: var(--text-secondary); font-size: 0.9rem;">Memeriksa integritas file audio di server...</p>
+        </div>
+        <div id="health-results-wrap" style="display: none;">
+          <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+            <div style="flex: 1; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; padding: 12px; text-align: center;">
+              <div id="health-total-val" style="font-size: 1.3rem; font-weight: 700; color: #38bdf8;">0</div>
+              <div style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px;">Total Lagu</div>
+            </div>
+            <div style="flex: 1; background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 10px; padding: 12px; text-align: center;">
+              <div id="health-healthy-val" style="font-size: 1.3rem; font-weight: 700; color: #22c55e;">0</div>
+              <div style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px;">Sehat</div>
+            </div>
+            <div style="flex: 1; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 10px; padding: 12px; text-align: center;">
+              <div id="health-broken-val" style="font-size: 1.3rem; font-weight: 700; color: #ef4444;">0</div>
+              <div style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px;">Rusak / Korup</div>
+            </div>
+          </div>
+          <div id="health-broken-list-wrap" style="display: none; margin-bottom: 16px;">
+            <p style="font-size: 0.8rem; font-weight: 600; color: #ef4444; margin-bottom: 6px;">Daftar Lagu Bermasalah:</p>
+            <div id="health-broken-list" style="max-height: 160px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px; background: rgba(0,0,0,0.2);"></div>
+          </div>
+          <div id="health-all-good-msg" style="display: none; text-align: center; padding: 12px; color: #22c55e; font-size: 0.9rem; font-weight: 600;">
+            🎉 Semua lagu di koleksi Anda sehat dan siap diputar!
+          </div>
+          <button id="health-repair-btn" class="btn-primary" style="width: 100%; padding: 12px; font-size: 0.9rem; border-radius: 10px; display: none;">
+            ⚡ Download Ulang & Perbaiki Semua Lagu Rusak
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Keyboard Shortcuts Cheatsheet Modal -->
   <div class="modal-overlay" id="shortcuts-modal">

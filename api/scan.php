@@ -113,10 +113,15 @@ try {
 
         $ext = strtolower($file->getExtension());
         if (in_array($ext, $allowedExtensions)) {
-            $relPath = str_replace('\\', '/', substr($realPath, strlen(realpath($songsDir)) + 1));
             $fileName = $file->getFilename();
             $fileSize = $file->getSize();
             $fileMtime = $file->getMTime();
+
+            // Skip zero byte ghost files
+            if ($fileSize === 0) continue;
+
+            $relPath = str_replace('\\', '/', substr($realPath, strlen(realpath($songsDir)) + 1));
+            $encodedRelPath = implode('/', array_map('rawurlencode', explode('/', $relPath)));
 
             // Extract ID3 with disk-backed covers
             $meta = SimpleID3::getMetadata($realPath, $coversDir);
@@ -144,7 +149,8 @@ try {
             $lyricsUrl = null;
             $lrcPath = dirname($realPath) . '/' . pathinfo($fileName, PATHINFO_FILENAME) . '.lrc';
             if (file_exists($lrcPath)) {
-                $lyricsUrl = 'songs/' . str_replace('\\', '/', substr(realpath($lrcPath), strlen(realpath($songsDir)) + 1));
+                $lrcRel = str_replace('\\', '/', substr(realpath($lrcPath), strlen(realpath($songsDir)) + 1));
+                $lyricsUrl = 'songs/' . implode('/', array_map('rawurlencode', explode('/', $lrcRel)));
             }
 
             $songs[] = [
@@ -154,7 +160,7 @@ try {
                 'album' => !empty($meta['album']) ? $meta['album'] : 'Single',
                 'year' => $meta['year'] ?? '',
                 'genre' => $meta['genre'] ?? 'Other',
-                'url' => 'songs/' . $relPath,
+                'url' => 'songs/' . $encodedRelPath,
                 'filename' => $fileName,
                 'cover' => $coverUrl,
                 'lyrics' => $lyricsUrl,

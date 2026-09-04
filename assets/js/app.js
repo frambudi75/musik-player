@@ -153,6 +153,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     return url;
   }
 
+  // Helper: Get safe public audio URL (encodes special characters like # or Japanese symbols)
+  function getSafeAudioUrl(songOrUrl) {
+    if (!songOrUrl) return '';
+    let url = (typeof songOrUrl === 'object') ? (songOrUrl.url || '') : String(songOrUrl);
+    if (!url) return '';
+    if (url.startsWith('blob:') || url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    const parts = url.split('/');
+    return parts.map(part => {
+      try {
+        return encodeURIComponent(decodeURIComponent(part));
+      } catch (e) {
+        return encodeURIComponent(part);
+      }
+    }).join('/');
+  }
+
   // Helper: Escape HTML
   function escapeHTML(str) {
     if (!str) return '';
@@ -942,7 +960,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (syncOffsetVal) syncOffsetVal.textContent = '0.0s';
 
     // Load Audio Source & Handle Offline Fallback & Crossfade
-    let audioSrc = song.url;
+    let audioSrc = getSafeAudioUrl(song);
     if (window.OfflineDB && (window.OfflineDB.hasOfflineBlob(song.id) || !navigator.onLine)) {
       try {
         const blobUrl = await window.OfflineDB.getTrackBlobUrl(song.id);
@@ -1006,15 +1024,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     savePlaybackSessionState();
   };
 
-  window.AudioCore.onError = (errMsg, err) => {
-    console.warn('AudioCore reported error:', errMsg, err);
-    showToast(`Kendala Audio: ${errMsg}. Mencoba putar ulang / lanjut...`, '⚠️');
-    // Auto-heal attempt: skip to next song smoothly after 1.8s
+  const _repairingSongsSet = new Set();
+
+  window.AudioCore.onError = async (errMsg, err) => {
+    const brokenSong = window.PlaylistManager.currentSong;
+    console.warn('AudioCore reported playback error:', errMsg, err, brokenSong);
+
+    if (!brokenSong) {
+      showToast(`Kendala Audio: ${errMsg}`, '⚠️');
+      return;
+    }
+
+    const title = brokenSong.title || 'Lagu';
+    const cleanArtist = (brokenSong.artist && brokenSong.artist !== 'Unknown Artist') ? brokenSong.artist : '';
+    const query = `${title} ${cleanArtist}`.trim();
+
+    showToast(`⚠️ File "${title}" rusak / 404. Mengunduh ulang via YouTube...`, '🔄');
+
+    // Auto-heal attempt: skip to next song smoothly after 1.2s so listening continues
     setTimeout(() => {
       if (window.PlaylistManager.library.length > 1) {
         window.PlaylistManager.next();
       }
-    }, 1800);
+    }, 1200);
+
+    // Background auto-repair download
+    if (!_repairingSongsSet.has(brokenSong.id)) {
+      _repairingSongsSet.add(brokenSong.id);
+      try {
+        const res = await fetch('api/yt_download.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: query })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          showToast(`Lagu "${title}" berhasil diperbaiki & diunduh ulang! ✨`, '✅');
+          fetchLibrary(true);
+        }
+      } catch (e) {
+        console.warn('Auto-repair download error:', e);
+      }
+    }
   };
 
   window.AudioCore.onTimeUpdate = (currentTime, duration) => {
@@ -3054,6 +3105,99 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.addEventListener('error', (event) => {
     console.warn('[Aura Crash Shield] Handled uncaught exception:', event.message);
   });
+
+  // ==========================================
+  // AUDIO LIBRARY HEALTH DOCTOR SYSTEM
+  // ==========================================
+  const healthModal = document.getElementById('health-modal');
+  const healthCheckBtn = document.getElementById('health-check-btn');
+  const healthCloseBtn = document.getElementById('health-close-btn');
+  const healthStatusWrap = document.getElementById('health-status-wrap');
+  const healthResultsWrap = document.getElementById('health-results-wrap');
+  const healthTotalVal = document.getElementById('health-total-val');
+  const healthHealthyVal = document.getElementById('health-healthy-val');
+  const healthBrokenVal = document.getElementById('health-broken-val');
+  const healthBrokenListWrap = document.getElementById('health-broken-list-wrap');
+  const healthBrokenList = document.getElementById('health-broken-list');
+  const healthAllGoodMsg = document.getElementById('health-all-good-msg');
+  const healthRepairBtn = document.getElementById('health-repair-btn');
+
+  let currentBrokenSongs = [];
+
+  async function runHealthCheck() {
+    if (healthModal) healthModal.classList.add('open');
+    if (healthStatusWrap) healthStatusWrap.style.display = 'block';
+    if (healthResultsWrap) healthResultsWrap.style.display = 'none';
+
+    try {
+      const res = await fetch('api/health_check.php');
+      const data = await res.json();
+      if (data.status === 'success') {
+        currentBrokenSongs = data.broken_songs || [];
+        if (healthStatusWrap) healthStatusWrap.style.display = 'none';
+        if (healthResultsWrap) healthResultsWrap.style.display = 'block';
+
+        if (healthTotalVal) healthTotalVal.textContent = data.total_scanned;
+        if (healthHealthyVal) healthHealthyVal.textContent = data.healthy_count;
+        if (healthBrokenVal) healthBrokenVal.textContent = data.broken_count;
+
+        if (data.broken_count > 0) {
+          if (healthBrokenListWrap) healthBrokenListWrap.style.display = 'block';
+          if (healthAllGoodMsg) healthAllGoodMsg.style.display = 'none';
+          if (healthRepairBtn) {
+            healthRepairBtn.style.display = 'block';
+            healthRepairBtn.disabled = false;
+            healthRepairBtn.textContent = `⚡ Download Ulang & Perbaiki (${data.broken_count} Lagu)`;
+          }
+
+          if (healthBrokenList) {
+            healthBrokenList.innerHTML = currentBrokenSongs.map(s => `
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem;">
+                <span style="color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 65%;">${escapeHTML(s.filename)}</span>
+                <span style="color: #ef4444; font-size: 0.72rem;">${escapeHTML(s.reason)}</span>
+              </div>
+            `).join('');
+          }
+        } else {
+          if (healthBrokenListWrap) healthBrokenListWrap.style.display = 'none';
+          if (healthAllGoodMsg) healthAllGoodMsg.style.display = 'block';
+          if (healthRepairBtn) healthRepairBtn.style.display = 'none';
+        }
+      }
+    } catch (e) {
+      showToast('Gagal menjalankan diagnosa kesehatan library', '⚠️');
+      if (healthModal) healthModal.classList.remove('open');
+    }
+  }
+
+  if (healthCheckBtn) healthCheckBtn.addEventListener('click', runHealthCheck);
+  if (healthCloseBtn) healthCloseBtn.addEventListener('click', () => healthModal && healthModal.classList.remove('open'));
+  if (healthModal) healthModal.addEventListener('click', (e) => {
+    if (e.target === healthModal) healthModal.classList.remove('open');
+  });
+
+  if (healthRepairBtn) {
+    healthRepairBtn.addEventListener('click', async () => {
+      healthRepairBtn.disabled = true;
+      healthRepairBtn.textContent = '⏳ Mengunduh ulang & memperbaiki lagu...';
+      showToast('Memulai download ulang lagu bermasalah...', '🔄');
+
+      try {
+        const res = await fetch('api/health_check.php?action=repair_all', { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'success') {
+          showToast(`Berhasil memperbaiki ${data.repaired_count} lagu! 🎉`, '✅');
+          await fetchLibrary(true);
+          runHealthCheck();
+        }
+      } catch (e) {
+        showToast('Gagal menjalankan perbaikan otomatis', '⚠️');
+      } finally {
+        healthRepairBtn.disabled = false;
+        healthRepairBtn.textContent = '⚡ Download Ulang & Perbaiki Semua Lagu Rusak';
+      }
+    });
+  }
 
   // PWA Service Worker Registration & Install Prompt
   if ('serviceWorker' in navigator) {
