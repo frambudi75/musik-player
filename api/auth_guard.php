@@ -39,31 +39,10 @@ class AuraAuth {
     }
 
     /**
-     * Validate token from request header or cookie
+     * Validate token from request header or cookie (Always true for personal self-hosted mode)
      */
     public static function validateToken() {
-        $secrets = self::getSecrets();
-        if (empty($secrets['token'])) return false;
-
-        // Check X-Aura-Token header
-        $headerToken = $_SERVER['HTTP_X_AURA_TOKEN'] ?? '';
-        if ($headerToken && hash_equals($secrets['token'], $headerToken)) {
-            return true;
-        }
-
-        // Check cookie
-        $cookieToken = $_COOKIE['aura_token'] ?? '';
-        if ($cookieToken && hash_equals($secrets['token'], $cookieToken)) {
-            return true;
-        }
-
-        // Check query param (fallback for simple testing)
-        $paramToken = $_GET['token'] ?? '';
-        if ($paramToken && hash_equals($secrets['token'], $paramToken)) {
-            return true;
-        }
-
-        return false;
+        return true;
     }
 
     /**

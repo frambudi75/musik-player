@@ -115,113 +115,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const DEFAULT_COVER = 'assets/sample_covers/placeholder.svg';
 
-  // ==========================================
-  // AUTH SYSTEM — Token-based API Protection
-  // ==========================================
-  const loginModal = document.getElementById('login-modal');
-  const loginCloseBtn = document.getElementById('login-close-btn');
-  const loginPasswordInput = document.getElementById('login-password-input');
-  const loginSubmitBtn = document.getElementById('login-submit-btn');
-  const loginError = document.getElementById('login-error');
-  const loginHint = document.getElementById('login-hint');
-  let _auraAuthToken = localStorage.getItem('aura_auth_token') || '';
-  let _pendingAuthResolve = null;
-
-  function getAuthToken() { return _auraAuthToken; }
-
-  function showLoginModal() {
-    return new Promise((resolve) => {
-      _pendingAuthResolve = resolve;
-      if (loginError) { loginError.style.display = 'none'; loginError.textContent = ''; }
-      if (loginPasswordInput) loginPasswordInput.value = '';
-      if (loginModal) loginModal.classList.add('open');
-      setTimeout(() => { if (loginPasswordInput) loginPasswordInput.focus(); }, 200);
-    });
-  }
-
-  function closeLoginModal(success = false) {
-    if (loginModal) loginModal.classList.remove('open');
-    if (_pendingAuthResolve) {
-      _pendingAuthResolve(success);
-      _pendingAuthResolve = null;
-    }
-  }
-
-  if (loginCloseBtn) loginCloseBtn.addEventListener('click', () => closeLoginModal(false));
-  if (loginModal) loginModal.addEventListener('click', (e) => {
-    if (e.target === loginModal) closeLoginModal(false);
-  });
-
-  async function doLogin() {
-    const pw = loginPasswordInput ? loginPasswordInput.value.trim() : '';
-    if (!pw) return;
-    if (loginSubmitBtn) { loginSubmitBtn.disabled = true; loginSubmitBtn.textContent = '⏳ Memverifikasi...'; }
-    try {
-      const res = await fetch('api/auth_guard.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: pw })
-      });
-      const data = await res.json();
-      if (data.status === 'success' && data.token) {
-        _auraAuthToken = data.token;
-        localStorage.setItem('aura_auth_token', data.token);
-        showToast('Login berhasil! 🔓', '✓');
-        closeLoginModal(true);
-      } else {
-        if (loginError) { loginError.textContent = data.message || 'Password salah'; loginError.style.display = 'block'; }
-      }
-    } catch (e) {
-      if (loginError) { loginError.textContent = 'Gagal menghubungi server'; loginError.style.display = 'block'; }
-    } finally {
-      if (loginSubmitBtn) { loginSubmitBtn.disabled = false; loginSubmitBtn.textContent = '🔓 Login'; }
-    }
-  }
-
-  if (loginSubmitBtn) loginSubmitBtn.addEventListener('click', doLogin);
-  if (loginPasswordInput) loginPasswordInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') doLogin();
-  });
-
   /**
-   * auraFetch — Fetch wrapper that auto-attaches auth token and handles 401
-   * Use this for ALL protected endpoint calls (upload, download, edit, trim, lyrics save)
+   * auraFetch — Direct Fetch wrapper
    */
   async function auraFetch(url, options = {}) {
-    const headers = { ...(options.headers || {}) };
-    if (_auraAuthToken) {
-      headers['X-Aura-Token'] = _auraAuthToken;
-    }
-
-    let res = await fetch(url, { ...options, headers });
-
-    // If unauthorized, prompt login and retry once
-    if (res.status === 401) {
-      const loggedIn = await showLoginModal();
-      if (loggedIn && _auraAuthToken) {
-        headers['X-Aura-Token'] = _auraAuthToken;
-        res = await fetch(url, { ...options, headers });
-      }
-    }
-
-    // Rate limited
-    if (res.status === 429) {
-      showToast('Terlalu banyak permintaan. Coba lagi dalam 1 menit.', '⚠️');
-    }
-
-    return res;
+    return fetch(url, options);
   }
-
-  // Check auth status on load (show default password hint on first run)
-  (async () => {
-    try {
-      const res = await fetch('api/auth_guard.php?action=status');
-      const data = await res.json();
-      if (data.first_run && data.default_password && loginHint) {
-        loginHint.innerHTML = `Password default: <strong style="color: var(--accent-primary); user-select: all;">${data.default_password}</strong><br><span style="font-size: 0.78rem; opacity: 0.7;">Ubah password setelah login pertama kali.</span>`;
-      }
-    } catch (e) {}
-  })();
 
   // Initialize Visualizer, Waveform Scrubber & Lyrics
   if (visualizerCanvas) {

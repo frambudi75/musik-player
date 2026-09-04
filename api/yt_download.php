@@ -8,9 +8,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-require_once __DIR__ . '/auth_guard.php';
-AuraAuth::requireAuth(['rateLimit' => 10]);
-
 
 // Increase execution time for download processing
 set_time_limit(1800);
