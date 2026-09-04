@@ -1095,6 +1095,54 @@
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toast-container"></div>
 
+  <!-- Login / Auth Modal -->
+  <div class="modal-overlay" id="login-modal">
+    <div class="modal-card" style="max-width: 380px;">
+      <div class="modal-header">
+        <h3 class="modal-title">🔐 Login Aura Music</h3>
+        <button class="modal-close-btn" id="login-close-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 10px 0 0;">
+        <p id="login-hint" style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 16px;">
+          Masukkan password admin untuk mengakses fitur ini.
+        </p>
+        <input type="password" id="login-password-input" class="input-field" placeholder="Password" autocomplete="current-password" style="width: 100%; margin-bottom: 12px;" />
+        <button id="login-submit-btn" class="btn-primary" style="width: 100%; padding: 12px; font-size: 0.95rem; border-radius: 10px;">
+          🔓 Login
+        </button>
+        <p id="login-error" style="color: #ff6b6b; font-size: 0.82rem; margin-top: 10px; display: none;"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keyboard Shortcuts Cheatsheet Modal -->
+  <div class="modal-overlay" id="shortcuts-modal">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">⌨️ Keyboard Shortcuts</h3>
+        <button class="modal-close-btn" id="shortcuts-close-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 10px 0 0;">
+        <div class="shortcuts-grid">
+          <div class="shortcut-item"><kbd>Space</kbd><span>Play / Pause</span></div>
+          <div class="shortcut-item"><kbd>N</kbd><span>Next Track</span></div>
+          <div class="shortcut-item"><kbd>P</kbd><span>Previous Track</span></div>
+          <div class="shortcut-item"><kbd>←</kbd><span>Mundur 5 detik</span></div>
+          <div class="shortcut-item"><kbd>→</kbd><span>Maju 5 detik</span></div>
+          <div class="shortcut-item"><kbd>↑</kbd><span>Volume +5%</span></div>
+          <div class="shortcut-item"><kbd>↓</kbd><span>Volume -5%</span></div>
+          <div class="shortcut-item"><kbd>M</kbd><span>Mute / Unmute</span></div>
+          <div class="shortcut-item"><kbd>S</kbd><span>Toggle Shuffle</span></div>
+          <div class="shortcut-item"><kbd>R</kbd><span>Toggle Repeat</span></div>
+          <div class="shortcut-item"><kbd>L</kbd><span>Immersive Lyrics</span></div>
+          <div class="shortcut-item"><kbd>Q</kbd><span>Toggle Queue Panel</span></div>
+          <div class="shortcut-item"><kbd>F</kbd><span>Fullscreen Mode</span></div>
+          <div class="shortcut-item"><kbd>?</kbd><span>Shortcut Cheatsheet</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Application Scripts -->
   <script src="assets/js/ambient-color.js"></script>
   <script src="assets/js/audio-core.js"></script>

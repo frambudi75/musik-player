@@ -115,6 +115,114 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const DEFAULT_COVER = 'assets/sample_covers/placeholder.svg';
 
+  // ==========================================
+  // AUTH SYSTEM — Token-based API Protection
+  // ==========================================
+  const loginModal = document.getElementById('login-modal');
+  const loginCloseBtn = document.getElementById('login-close-btn');
+  const loginPasswordInput = document.getElementById('login-password-input');
+  const loginSubmitBtn = document.getElementById('login-submit-btn');
+  const loginError = document.getElementById('login-error');
+  const loginHint = document.getElementById('login-hint');
+  let _auraAuthToken = localStorage.getItem('aura_auth_token') || '';
+  let _pendingAuthResolve = null;
+
+  function getAuthToken() { return _auraAuthToken; }
+
+  function showLoginModal() {
+    return new Promise((resolve) => {
+      _pendingAuthResolve = resolve;
+      if (loginError) { loginError.style.display = 'none'; loginError.textContent = ''; }
+      if (loginPasswordInput) loginPasswordInput.value = '';
+      if (loginModal) loginModal.classList.add('open');
+      setTimeout(() => { if (loginPasswordInput) loginPasswordInput.focus(); }, 200);
+    });
+  }
+
+  function closeLoginModal(success = false) {
+    if (loginModal) loginModal.classList.remove('open');
+    if (_pendingAuthResolve) {
+      _pendingAuthResolve(success);
+      _pendingAuthResolve = null;
+    }
+  }
+
+  if (loginCloseBtn) loginCloseBtn.addEventListener('click', () => closeLoginModal(false));
+  if (loginModal) loginModal.addEventListener('click', (e) => {
+    if (e.target === loginModal) closeLoginModal(false);
+  });
+
+  async function doLogin() {
+    const pw = loginPasswordInput ? loginPasswordInput.value.trim() : '';
+    if (!pw) return;
+    if (loginSubmitBtn) { loginSubmitBtn.disabled = true; loginSubmitBtn.textContent = '⏳ Memverifikasi...'; }
+    try {
+      const res = await fetch('api/auth_guard.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw })
+      });
+      const data = await res.json();
+      if (data.status === 'success' && data.token) {
+        _auraAuthToken = data.token;
+        localStorage.setItem('aura_auth_token', data.token);
+        showToast('Login berhasil! 🔓', '✓');
+        closeLoginModal(true);
+      } else {
+        if (loginError) { loginError.textContent = data.message || 'Password salah'; loginError.style.display = 'block'; }
+      }
+    } catch (e) {
+      if (loginError) { loginError.textContent = 'Gagal menghubungi server'; loginError.style.display = 'block'; }
+    } finally {
+      if (loginSubmitBtn) { loginSubmitBtn.disabled = false; loginSubmitBtn.textContent = '🔓 Login'; }
+    }
+  }
+
+  if (loginSubmitBtn) loginSubmitBtn.addEventListener('click', doLogin);
+  if (loginPasswordInput) loginPasswordInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doLogin();
+  });
+
+  /**
+   * auraFetch — Fetch wrapper that auto-attaches auth token and handles 401
+   * Use this for ALL protected endpoint calls (upload, download, edit, trim, lyrics save)
+   */
+  async function auraFetch(url, options = {}) {
+    const headers = { ...(options.headers || {}) };
+    if (_auraAuthToken) {
+      headers['X-Aura-Token'] = _auraAuthToken;
+    }
+
+    let res = await fetch(url, { ...options, headers });
+
+    // If unauthorized, prompt login and retry once
+    if (res.status === 401) {
+      const loggedIn = await showLoginModal();
+      if (loggedIn && _auraAuthToken) {
+        headers['X-Aura-Token'] = _auraAuthToken;
+        res = await fetch(url, { ...options, headers });
+      }
+    }
+
+    // Rate limited
+    if (res.status === 429) {
+      showToast('Terlalu banyak permintaan. Coba lagi dalam 1 menit.', '⚠️');
+    }
+
+    return res;
+  }
+
+  // Check auth status on load (show default password hint on first run)
+  (async () => {
+    try {
+      const res = await fetch('api/auth_guard.php?action=status');
+      const data = await res.json();
+      if (data.first_run && data.default_password && loginHint) {
+        loginHint.innerHTML = `Password default: <strong style="color: var(--accent-primary); user-select: all;">${data.default_password}</strong><br><span style="font-size: 0.78rem; opacity: 0.7;">Ubah password setelah login pertama kali.</span>`;
+      }
+    } catch (e) {}
+  })();
+
   // Initialize Visualizer, Waveform Scrubber & Lyrics
   if (visualizerCanvas) {
     visualizer = new window.AudioVisualizer(visualizerCanvas);
@@ -203,6 +311,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Skeleton Loading Placeholders
+  function renderSkeletonLoading() {
+    if (songTableBody && window.PlaylistManager.library.length === 0) {
+      songTableBody.innerHTML = Array(6).fill(0).map(() => `
+        <tr class="song-row skeleton-row" style="pointer-events: none;">
+          <td style="width: 40px;"><div class="skeleton" style="width: 18px; height: 14px;"></div></td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="skeleton skeleton-cover"></div>
+              <div class="skeleton-text-group">
+                <div class="skeleton skeleton-line title"></div>
+                <div class="skeleton skeleton-line subtitle"></div>
+              </div>
+            </div>
+          </td>
+          <td><div class="skeleton skeleton-line" style="width: 50%;"></div></td>
+          <td><div class="skeleton skeleton-line" style="width: 35%;"></div></td>
+          <td><div class="skeleton skeleton-line" style="width: 30px;"></div></td>
+          <td><div class="skeleton" style="width: 24px; height: 24px; border-radius: 50%;"></div></td>
+        </tr>
+      `).join('');
+    }
+    if (songsGrid && window.PlaylistManager.library.length === 0) {
+      songsGrid.innerHTML = Array(6).fill(0).map(() => `
+        <div class="skeleton-card" style="pointer-events: none;">
+          <div class="skeleton skeleton-card-cover"></div>
+          <div class="skeleton-text-group" style="padding: 4px 0;">
+            <div class="skeleton skeleton-line title" style="width: 70%; height: 14px;"></div>
+            <div class="skeleton skeleton-line subtitle" style="width: 45%; height: 10px;"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
   // Load Library with Instant Client-Side Pre-warming Cache
   async function fetchLibrary(forceRefresh = false) {
     // 1. Instant Cache Pre-warming (0ms First Render)
@@ -228,6 +371,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         }
       } catch (err) {}
+    }
+
+    if (window.PlaylistManager.library.length === 0) {
+      renderSkeletonLoading();
     }
 
     // 2. Fetch from High-Performance Server API
@@ -776,11 +923,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    let dragSrcIndex = null;
+
     queueList.forEach((song, i) => {
       const qItem = document.createElement('div');
       qItem.className = 'queue-item';
+      qItem.draggable = true;
+      qItem.dataset.queueIndex = i;
       const coverSrc = getSafeCoverUrl(song);
       qItem.innerHTML = `
+        <span class="queue-drag-handle" title="Tarik untuk mengatur ulang">⣿</span>
         <img class="song-thumbnail" src="${escapeHTML(coverSrc)}" alt="Cover" />
         <div class="song-info-stack" style="flex:1; min-width: 0;">
           <span class="song-cell-title">${escapeHTML(song.title)}</span>
@@ -791,7 +943,42 @@ document.addEventListener('DOMContentLoaded', async () => {
       const img = qItem.querySelector('.song-thumbnail');
       if (img) img.onerror = () => { img.src = DEFAULT_COVER; };
 
-      qItem.addEventListener('click', () => {
+      // Drag & Drop events
+      qItem.addEventListener('dragstart', (e) => {
+        dragSrcIndex = i;
+        qItem.classList.add('queue-dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', i);
+      });
+      qItem.addEventListener('dragend', () => {
+        qItem.classList.remove('queue-dragging');
+        document.querySelectorAll('.queue-item.queue-drag-over').forEach(el => el.classList.remove('queue-drag-over'));
+      });
+      qItem.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        qItem.classList.add('queue-drag-over');
+      });
+      qItem.addEventListener('dragleave', () => {
+        qItem.classList.remove('queue-drag-over');
+      });
+      qItem.addEventListener('drop', (e) => {
+        e.preventDefault();
+        qItem.classList.remove('queue-drag-over');
+        const fromIdx = dragSrcIndex;
+        const toIdx = i;
+        if (fromIdx !== null && fromIdx !== toIdx) {
+          const queue = window.PlaylistManager.queue;
+          const [moved] = queue.splice(fromIdx, 1);
+          queue.splice(toIdx, 0, moved);
+          renderQueue(queue);
+          showToast(`Antrean diubah: "${moved.title}"`, '↕️');
+        }
+      });
+
+      // Click to play
+      qItem.addEventListener('click', (e) => {
+        if (e.target.closest('.queue-drag-handle')) return;
         window.PlaylistManager.playTrack(song);
       });
       queueView.appendChild(qItem);
@@ -1832,7 +2019,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     resetBatchUI();
 
     try {
-      const res = await fetch('api/yt_download.php', {
+      const res = await auraFetch('api/yt_download.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'download', query: query })
@@ -1977,7 +2164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       batchProgressStatus.textContent = `Mengunduh (${i + 1}/${total}): ${track.title}`;
 
       try {
-        const res = await fetch('api/yt_download.php', {
+        const res = await auraFetch('api/yt_download.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'download', query: track.query })
@@ -2128,7 +2315,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     submitUploadBtn.textContent = 'Mengunggah...';
 
     try {
-      const res = await fetch('api/upload.php', {
+      const res = await auraFetch('api/upload.php', {
         method: 'POST',
         body: formData
       });
@@ -2371,7 +2558,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       saveMetadataBtn.textContent = 'Menyimpan...';
 
       try {
-        const res = await fetch('api/edit_metadata.php', {
+        const res = await auraFetch('api/edit_metadata.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -2508,7 +2695,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const start = parseInt(trimStartSlider.value, 10) || 0;
       const dur = parseInt(trimDurSlider.value, 10) || 30;
       const fn = currentTrimmerSong.filename || '';
-      const url = `api/trim_audio.php?filename=${encodeURIComponent(fn)}&start=${start}&duration=${dur}`;
+      const tokenParam = _auraAuthToken ? `&token=${encodeURIComponent(_auraAuthToken)}` : '';
+      const url = `api/trim_audio.php?filename=${encodeURIComponent(fn)}&start=${start}&duration=${dur}${tokenParam}`;
       showToast('Menyiapkan download potongan ringtone...', '⏬');
       window.location.href = url;
     });
@@ -2676,7 +2864,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       lrcSaveBtn.textContent = 'Menyimpan...';
 
       try {
-        const res = await fetch('api/save_lyrics.php', {
+        const res = await auraFetch('api/save_lyrics.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -2706,8 +2894,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Global Keyboard Shortcuts
+  const shortcutsModal = document.getElementById('shortcuts-modal');
+  const shortcutsCloseBtn = document.getElementById('shortcuts-close-btn');
+  if (shortcutsCloseBtn) shortcutsCloseBtn.addEventListener('click', () => shortcutsModal.classList.remove('open'));
+  if (shortcutsModal) shortcutsModal.addEventListener('click', (e) => {
+    if (e.target === shortcutsModal) shortcutsModal.classList.remove('open');
+  });
+
   window.addEventListener('keydown', (e) => {
+    // Skip when typing in inputs
     if (['input', 'textarea'].includes(e.target.tagName.toLowerCase())) return;
+    // Skip when login modal is open
+    if (loginModal && loginModal.classList.contains('open')) return;
 
     if (e.code === 'Space') {
       e.preventDefault();
@@ -2723,6 +2921,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else if (e.code === 'ArrowLeft') {
       e.preventDefault();
       window.AudioCore.seek(window.AudioCore.audio.currentTime - 5);
+    } else if (e.code === 'ArrowUp') {
+      e.preventDefault();
+      const curVol = window.AudioCore.getVolume();
+      const newVol = Math.min(1, curVol + 0.05);
+      window.AudioCore.setVolume(newVol);
+      if (volumeFill) volumeFill.style.width = `${newVol * 100}%`;
+      showToast(`Volume: ${Math.round(newVol * 100)}%`, '🔊');
+    } else if (e.code === 'ArrowDown') {
+      e.preventDefault();
+      const curVol2 = window.AudioCore.getVolume();
+      const newVol2 = Math.max(0, curVol2 - 0.05);
+      window.AudioCore.setVolume(newVol2);
+      if (volumeFill) volumeFill.style.width = `${newVol2 * 100}%`;
+      showToast(`Volume: ${Math.round(newVol2 * 100)}%`, newVol2 === 0 ? '🔇' : '🔉');
+    } else if (e.key === 'n' || e.key === 'N') {
+      window.PlaylistManager.next();
+    } else if (e.key === 'p' || e.key === 'P') {
+      window.PlaylistManager.prev();
+    } else if (e.key === 's' || e.key === 'S') {
+      shuffleBtn.click();
+    } else if (e.key === 'r' || e.key === 'R') {
+      repeatBtn.click();
+    } else if (e.key === 'q' || e.key === 'Q') {
+      if (panelToggleBtn) panelToggleBtn.click();
     } else if (e.key === 'l' || e.key === 'L') {
       if (immersiveOverlay.classList.contains('open')) {
         immersiveCloseBtn.click();
@@ -2733,6 +2955,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       immersiveBtn.click();
     } else if (e.key === 'm' || e.key === 'M') {
       volumeBtn.click();
+    } else if (e.key === '?') {
+      if (shortcutsModal) {
+        shortcutsModal.classList.toggle('open');
+      }
     }
   });
 

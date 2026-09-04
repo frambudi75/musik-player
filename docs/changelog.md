@@ -4,6 +4,17 @@ Semua pembaruan penting, penambahan fitur, dan perbaikan bug didokumentasikan di
 
 ---
 
+## [v2.2.0] - 2026-09-04
+### 🔒 Keamanan API & Performa
+* **Auth Guard & Rate Limiter Middleware (`api/auth_guard.php`)**: Melindungi endpoint sensitif (upload, YouTube/Spotify download, edit metadata, save lyrics, audio trimmer) dengan token-based authentication (`X-Aura-Token`) dan IP rate limiting.
+* **Auto-Login Modal & Frontend Fetch Wrapper**: Integrasi dialog login admin otomatis saat mengakses fitur terlindungi dan wrapper `auraFetch()`.
+* **Skeleton Loading Animation**: Placeholder shimmer memuat instan saat mengambil pustaka musik pertama kali untuk visual UX yang lebih halus.
+* **Queue Drag & Drop Reordering**: Kemampuan mengatur ulang urutan antrean lagu secara interaktif melalui handle drag `⣿`.
+* **Expanded Keyboard Shortcuts & Modal Cheatsheet**: Shortcut lengkap (`Space`, `N`, `P`, `↑/↓`, `M`, `S`, `R`, `L`, `Q`, `F`, `?`) beserta dialog bantuan pintasan.
+* **PWA Cache v15**: Pembaruan Service Worker cache untuk sinkronisasi pembaruan terkini.
+
+---
+
 ## [v2.1.0] - 2026-09-04
 ### 🚀 Fitur Baru & Peningkatan
 * **Pure PHP ID3 Magic Byte Parser**: Ekstraksi cover album APIC ID3v2 kini mendeteksi binary header JPEG (`\xFF\xD8\xFF`) dan PNG (`\x89PNG`) langsung, menghindari korupsi gambar akibat variasi encoding ID3v2.
