@@ -1,5 +1,5 @@
 /**
- * Aura Music - Master Application Controller
+ * NadaKita - Master Application Controller
  * Connects UI, Web Audio API, DSP FX Studio, Visualizer, Lyrics, PiP Mini-Player, Sleep Timer, and Statistics
  */
 
@@ -1049,7 +1049,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: song.title,
         artist: song.artist,
-        album: song.album || 'Aura Music',
+        album: song.album || 'NadaKita',
         artwork: [
           { src: song.cover || DEFAULT_COVER, sizes: '512x512', type: 'image/png' },
           { src: song.cover || DEFAULT_COVER, sizes: '192x192', type: 'image/png' }

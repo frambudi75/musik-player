@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aura-music-v24';
+const CACHE_NAME = 'nadakita-music-v1';
 const ASSETS_TO_CACHE = [
   './',
   './index.php',

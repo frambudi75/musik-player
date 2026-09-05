@@ -1,6 +1,6 @@
 {
-  "name": "Aura Music - Personal Audio Player",
-  "short_name": "Aura Music",
+  "name": "NadaKita - Personal Audio Player",
+  "short_name": "NadaKita",
   "description": "Personal High-Fidelity Music Player with Dynamic Ambient Glow, Realtime Synced Lyrics, and 10-Band Graphic Equalizer",
   "start_url": "./index.php",
   "scope": "./",

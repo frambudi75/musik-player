@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Aura Music - Personal Audio Experience</title>
+  <title>NadaKita - Personal Audio Experience</title>
   <meta name="description" content="Personal High-Fidelity Music Player with Dynamic Ambient Glow, Realtime Synced Lyrics, and 10-Band Graphic Equalizer">
   
   <!-- PWA Manifest & Meta -->
@@ -12,7 +12,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Aura Music">
+  <meta name="apple-mobile-web-app-title" content="NadaKita">
   <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎵</text></svg>">
@@ -42,7 +42,7 @@
               <circle cx="18" cy="16" r="3"></circle>
             </svg>
           </div>
-          <span class="brand-text">AURA</span>
+          <span class="brand-text">NadaKita</span>
           <span class="brand-badge">STUDIO</span>
         </div>
 
@@ -185,7 +185,7 @@
         <section class="hero-banner" id="hero-banner">
           <img class="hero-cover" id="hero-cover" src="assets/sample_covers/placeholder.svg" alt="Cover Album" />
           <div class="hero-content">
-            <span class="hero-tag">AURA NOW PLAYING</span>
+            <span class="hero-tag">NADAKITA NOW PLAYING</span>
             <h1 class="hero-title" id="hero-title">Pilih lagu untuk memulai</h1>
             <p class="hero-meta" id="hero-artist">Koleksi audio lokal Anda</p>
             <div class="hero-actions">
@@ -394,7 +394,7 @@
         </div>
         <div class="player-track-info">
           <span class="player-title" id="player-title">Belum ada lagu</span>
-          <span class="player-artist" id="player-artist">Aura Music Player</span>
+          <span class="player-artist" id="player-artist">NadaKita Player</span>
         </div>
         <button class="player-heart-btn" id="player-heart-btn" title="Tambah ke Favorit">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
