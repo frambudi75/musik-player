@@ -783,9 +783,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Render Current Tab Content
   async function renderCurrentView() {
+    const filterSortBar = document.getElementById('filter-sort-bar');
+    const sectionHeader = document.getElementById('section-header');
+
     if (currentNavTab === 'stats') {
       heroBanner.style.display = 'none';
-      document.getElementById('section-header').style.display = 'none';
+      if (sectionHeader) sectionHeader.style.display = 'none';
+      if (filterSortBar) filterSortBar.style.display = 'none';
       tableViewWrap.style.display = 'none';
       songsGrid.style.display = 'none';
       statsViewWrap.style.display = 'block';
@@ -794,7 +798,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     heroBanner.style.display = 'flex';
-    document.getElementById('section-header').style.display = 'flex';
+    if (sectionHeader) sectionHeader.style.display = 'flex';
+    if (filterSortBar) filterSortBar.style.display = 'flex';
     statsViewWrap.style.display = 'none';
 
     // Set view container visibility according to currentViewMode
@@ -802,7 +807,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       tableViewWrap.style.display = 'none';
       songsGrid.style.display = 'grid';
     } else {
-      tableViewWrap.style.display = 'table';
+      tableViewWrap.style.display = 'block';
       songsGrid.style.display = 'none';
     }
 
@@ -930,6 +935,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
         currentNavTab = 'playlist';
         currentActivePlaylistId = pl.id;
+        if (searchInput) {
+          searchInput.value = '';
+          if (searchClearBtn) searchClearBtn.style.display = 'none';
+        }
         navItems.forEach((n) => n.classList.remove('active'));
         renderSidebarPlaylists();
         renderCurrentView();
@@ -1324,6 +1333,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!tab) return;
       currentNavTab = tab;
       currentActivePlaylistId = null;
+      if (searchInput) {
+        searchInput.value = '';
+        if (searchClearBtn) searchClearBtn.style.display = 'none';
+      }
       navItems.forEach((n) => n.classList.remove('active'));
       item.classList.add('active');
       renderSidebarPlaylists();
