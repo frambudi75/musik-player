@@ -270,9 +270,9 @@
             <colgroup>
               <col style="width: 46px;">
               <col style="width: auto;">
-              <col style="width: 22%;" class="col-album">
-              <col style="width: 15%;" class="col-genre">
-              <col style="width: 130px;">
+              <col style="width: 20%;" class="col-album">
+              <col style="width: 12%;" class="col-genre">
+              <col style="width: 210px;">
             </colgroup>
             <thead>
               <tr>
