@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const timeTotal = document.getElementById('time-total');
   const progressBar = document.getElementById('progress-bar');
   const progressFill = document.getElementById('progress-fill');
+  const mobileProgressFill = document.getElementById('mobile-progress-fill');
   const progressThumb = document.getElementById('progress-thumb');
   const volumeBar = document.getElementById('volume-bar');
   const volumeFill = document.getElementById('volume-fill');
@@ -454,20 +455,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                 </svg>
               </button>
-              <button class="offline-btn ${isSaved ? 'saved' : ''}" title="${isSaved ? 'Hapus dari Penyimpanan Offline' : 'Simpan Offline (Bisa diputar tanpa internet)'}" data-action="offline" data-id="${escapeHTML(song.id)}">
+              <button class="offline-btn action-btn-desktop ${isSaved ? 'saved' : ''}" title="${isSaved ? 'Hapus dari Penyimpanan Offline' : 'Simpan Offline (Bisa diputar tanpa internet)'}" data-action="offline" data-id="${escapeHTML(song.id)}">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
               </button>
-              <button class="add-pl-btn" title="Tambahkan ke Playlist" data-action="add-pl" data-id="${escapeHTML(song.id)}">
+              <button class="add-pl-btn action-btn-desktop" title="Tambahkan ke Playlist" data-action="add-pl" data-id="${escapeHTML(song.id)}">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
               </button>
-              <button class="trim-btn" title="Potong Ringtone / Audio Trimmer" data-action="trim" data-id="${escapeHTML(song.id)}">
+              <button class="trim-btn action-btn-desktop" title="Potong Ringtone / Audio Trimmer" data-action="trim" data-id="${escapeHTML(song.id)}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="6" cy="6" r="3"></circle>
                   <circle cx="6" cy="18" r="3"></circle>
@@ -476,17 +477,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                   <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
                 </svg>
               </button>
-              <button class="lrc-btn" title="Studio Buat Lirik Sinkron (.LRC)" data-action="lrc" data-id="${escapeHTML(song.id)}">
+              <button class="lrc-btn action-btn-desktop" title="Studio Buat Lirik Sinkron (.LRC)" data-action="lrc" data-id="${escapeHTML(song.id)}">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
                   <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
                   <path d="M2 2l7.586 7.586"></path>
                 </svg>
               </button>
-              <button class="edit-meta-btn" title="Edit Info Lagu" data-action="edit-meta" data-id="${escapeHTML(song.id)}">
+              <button class="edit-meta-btn action-btn-desktop" title="Edit Info Lagu" data-action="edit-meta" data-id="${escapeHTML(song.id)}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 20h9"></path>
                   <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+              </button>
+              <button class="more-opts-btn action-btn-mobile" title="Menu Opsi Lagu" data-action="more-opts" data-id="${escapeHTML(song.id)}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="1.5"></circle>
+                  <circle cx="12" cy="5" r="1.5"></circle>
+                  <circle cx="12" cy="19" r="1.5"></circle>
                 </svg>
               </button>
               ${isInsideCustomPlaylist ? `
@@ -548,14 +556,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                 </svg>
               </button>
-              <button class="offline-btn offline-card-btn ${isSaved ? 'saved' : ''}" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="${isSaved ? 'Hapus dari Penyimpanan Offline' : 'Simpan Offline'}" data-action="offline" data-id="${escapeHTML(song.id)}">
+              <button class="offline-btn offline-card-btn action-btn-desktop ${isSaved ? 'saved' : ''}" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="${isSaved ? 'Hapus dari Penyimpanan Offline' : 'Simpan Offline'}" data-action="offline" data-id="${escapeHTML(song.id)}">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
               </button>
-              <button class="trim-btn trim-card-btn" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="Potong Ringtone" data-action="trim" data-id="${escapeHTML(song.id)}">
+              <button class="trim-btn trim-card-btn action-btn-desktop" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="Potong Ringtone" data-action="trim" data-id="${escapeHTML(song.id)}">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="6" cy="6" r="3"></circle>
                   <circle cx="6" cy="18" r="3"></circle>
@@ -564,22 +572,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                   <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
                 </svg>
               </button>
-              <button class="lrc-btn lrc-card-btn" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="Buat Lirik LRC" data-action="lrc" data-id="${escapeHTML(song.id)}">
+              <button class="lrc-btn lrc-card-btn action-btn-desktop" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="Buat Lirik LRC" data-action="lrc" data-id="${escapeHTML(song.id)}">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
                   <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                  <path d="M2 2l7.586 7.586"></path>
                 </svg>
               </button>
-              <button class="edit-meta-btn edit-card-btn" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="Edit Info" data-action="edit-meta" data-id="${escapeHTML(song.id)}">
+              <button class="edit-meta-btn edit-card-btn action-btn-desktop" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="Edit Info" data-action="edit-meta" data-id="${escapeHTML(song.id)}">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 20h9"></path>
                   <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
                 </svg>
               </button>
-              <button class="icon-btn add-pl-card-btn" style="width: 28px; height: 28px; min-width: 28px; padding: 0; flex-shrink: 0;" title="Tambah ke Playlist" data-action="add-pl" data-id="${escapeHTML(song.id)}">
+              <button class="icon-btn add-pl-card-btn action-btn-desktop" style="width: 28px; height: 28px; min-width: 28px; padding: 0; flex-shrink: 0;" title="Tambah ke Playlist" data-action="add-pl" data-id="${escapeHTML(song.id)}">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+              <button class="more-opts-btn action-btn-mobile" style="width: 28px; height: 28px; min-width: 28px; padding: 0; background: transparent; border: none; color: var(--text-secondary); cursor: pointer;" title="Menu Opsi Lagu" data-action="more-opts" data-id="${escapeHTML(song.id)}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="1.5"></circle>
+                  <circle cx="12" cy="5" r="1.5"></circle>
+                  <circle cx="12" cy="19" r="1.5"></circle>
                 </svg>
               </button>
               ${isInsideCustomPlaylist ? `
@@ -612,7 +628,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (btn) {
       e.stopPropagation();
       const action = btn.dataset.action;
-      if (action === 'like') {
+      if (action === 'more-opts') {
+        openSongActionsSheet(song);
+      } else if (action === 'like') {
         const liked = await window.PlaylistManager.toggleLike(song.id);
         btn.classList.toggle('liked', liked);
         btn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
@@ -674,7 +692,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (btn) {
       e.stopPropagation();
       const action = btn.dataset.action;
-      if (action === 'like') {
+      if (action === 'more-opts') {
+        openSongActionsSheet(song);
+      } else if (action === 'like') {
         const liked = await window.PlaylistManager.toggleLike(song.id);
         btn.classList.toggle('liked', liked);
         btn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
@@ -1193,6 +1213,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       timeTotal.textContent = formatTime(duration);
       const percent = duration > 0 ? (currentTime / duration) * 100 : 0;
       progressFill.style.width = `${percent}%`;
+      if (mobileProgressFill) mobileProgressFill.style.width = `${percent}%`;
       progressThumb.style.left = `${percent}%`;
     }
     if (waveformScrubber) {
@@ -3018,6 +3039,169 @@ document.addEventListener('DOMContentLoaded', async () => {
       } finally {
         lrcSaveBtn.disabled = false;
         lrcSaveBtn.textContent = '💾 Simpan Lirik Sinkron';
+      }
+    });
+  }
+
+  // ==========================================
+  // MOBILE SONG ACTIONS BOTTOM SHEET
+  // ==========================================
+  const songActionsModal = document.getElementById('song-actions-modal');
+  const songActionsCloseBtn = document.getElementById('song-actions-close-btn');
+  const songActionsThumb = document.getElementById('song-actions-thumb');
+  const songActionsTitle = document.getElementById('song-actions-title');
+  const songActionsArtist = document.getElementById('song-actions-artist');
+  const songActionsList = document.getElementById('song-actions-list');
+
+  let currentActionsSong = null;
+
+  async function openSongActionsSheet(song) {
+    if (!song) return;
+    currentActionsSong = song;
+    const coverSrc = getSafeCoverUrl(song);
+    if (songActionsThumb) songActionsThumb.src = coverSrc;
+    if (songActionsTitle) songActionsTitle.textContent = song.title;
+    if (songActionsArtist) songActionsArtist.textContent = song.artist || 'Unknown Artist';
+
+    const isLiked = window.PlaylistManager.isLiked(song.id);
+    const isSaved = song.isOffline || (window.OfflineDB && (await window.OfflineDB.isSaved(song.id)));
+    const isInsideCustomPlaylist = currentNavTab === 'playlist' && currentActivePlaylistId && currentActivePlaylistId !== 'favorites';
+
+    if (songActionsList) {
+      songActionsList.innerHTML = `
+        <button class="sheet-action-item" data-sheet-action="play">
+          <div class="sheet-action-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          </div>
+          <span>Putar Sekarang</span>
+        </button>
+        <button class="sheet-action-item ${isLiked ? 'liked' : ''}" data-sheet-action="like">
+          <div class="sheet-action-icon" style="${isLiked ? 'color: var(--accent-like);' : ''}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+          </div>
+          <span>${isLiked ? 'Hapus dari Favorit (Liked)' : 'Tambah ke Favorit (Liked)'}</span>
+        </button>
+        <button class="sheet-action-item" data-sheet-action="add-pl">
+          <div class="sheet-action-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </div>
+          <span>Tambahkan ke Playlist</span>
+        </button>
+        <button class="sheet-action-item ${isSaved ? 'saved' : ''}" data-sheet-action="offline">
+          <div class="sheet-action-icon" style="${isSaved ? 'color: #10b981;' : ''}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </div>
+          <span>${isSaved ? 'Hapus dari Penyimpanan Offline' : 'Simpan Offline (Putar Tanpa Internet)'}</span>
+        </button>
+        <button class="sheet-action-item" data-sheet-action="trim">
+          <div class="sheet-action-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="6" cy="6" r="3"></circle>
+              <circle cx="6" cy="18" r="3"></circle>
+              <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+              <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+              <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+            </svg>
+          </div>
+          <span>Potong Ringtone / Audio Trimmer</span>
+        </button>
+        <button class="sheet-action-item" data-sheet-action="lrc">
+          <div class="sheet-action-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+              <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+              <path d="M2 2l7.586 7.586"></path>
+            </svg>
+          </div>
+          <span>Studio Buat Lirik Sinkron (.LRC)</span>
+        </button>
+        <button class="sheet-action-item" data-sheet-action="edit-meta">
+          <div class="sheet-action-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+          </div>
+          <span>Edit Info Lagu & Tag ID3</span>
+        </button>
+        ${isInsideCustomPlaylist ? `
+          <button class="sheet-action-item danger" data-sheet-action="remove-pl" style="color: #ef4444;">
+            <div class="sheet-action-icon" style="color: #ef4444;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </div>
+            <span>Hapus dari Playlist Ini</span>
+          </button>
+        ` : ''}
+      `;
+    }
+
+    if (songActionsModal) songActionsModal.classList.add('open');
+  }
+
+  if (songActionsCloseBtn) {
+    songActionsCloseBtn.addEventListener('click', () => {
+      if (songActionsModal) songActionsModal.classList.remove('open');
+    });
+  }
+
+  if (songActionsModal) {
+    songActionsModal.addEventListener('click', async (e) => {
+      if (e.target === songActionsModal) {
+        songActionsModal.classList.remove('open');
+        return;
+      }
+      const item = e.target.closest('.sheet-action-item');
+      if (!item || !currentActionsSong) return;
+
+      const action = item.dataset.sheetAction;
+      songActionsModal.classList.remove('open');
+
+      if (action === 'play') {
+        window.PlaylistManager.playTrack(currentActionsSong, currentDisplayedSongs);
+      } else if (action === 'like') {
+        const liked = await window.PlaylistManager.toggleLike(currentActionsSong.id);
+        showToast(liked ? 'Ditambahkan ke Liked Songs' : 'Dihapus dari Liked Songs');
+        renderCurrentView();
+      } else if (action === 'add-pl') {
+        openAddToPlaylistModal(currentActionsSong);
+      } else if (action === 'offline') {
+        const isSaved = await window.OfflineDB.isSaved(currentActionsSong.id);
+        if (isSaved) {
+          await window.OfflineDB.removeTrack(currentActionsSong.id);
+          showToast(`Lagu offline "${currentActionsSong.title}" dihapus`, '🗑️');
+        } else {
+          showToast('Mengunduh lagu untuk offline...', '⏳');
+          try {
+            await window.OfflineDB.saveTrack(currentActionsSong);
+            showToast(`"${currentActionsSong.title}" tersimpan offline!`, '💾');
+          } catch (err) {
+            showToast('Gagal mengunduh offline: ' + err.message, '⚠️');
+          }
+        }
+        if (currentNavTab === 'offline') renderCurrentView();
+      } else if (action === 'trim') {
+        openTrimmerModal(currentActionsSong);
+      } else if (action === 'lrc') {
+        openLrcMakerModal(currentActionsSong);
+      } else if (action === 'edit-meta') {
+        openEditMetadataModal(currentActionsSong);
+      } else if (action === 'remove-pl') {
+        await window.PlaylistManager.removeSongFromPlaylist(currentActivePlaylistId, currentActionsSong.id);
+        showToast('Lagu dihapus dari playlist', '✓');
+        renderSidebarPlaylists();
+        renderCurrentView();
       }
     });
   }

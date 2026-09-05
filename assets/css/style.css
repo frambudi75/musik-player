@@ -849,6 +849,144 @@ html, body {
   transform: scale(1.12);
 }
 
+.action-btn-desktop {
+  display: inline-flex;
+}
+
+.action-btn-mobile {
+  display: none;
+}
+
+.more-opts-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+  flex-shrink: 0;
+}
+
+.more-opts-btn:hover {
+  background: var(--bg-surface-elevated);
+  color: var(--text-primary);
+  transform: scale(1.1);
+}
+
+/* ==========================================================================
+   MOBILE SONG ACTIONS BOTTOM SHEET MODAL
+   ========================================================================== */
+.song-actions-overlay {
+  align-items: flex-end !important;
+}
+
+.song-actions-card {
+  width: 100% !important;
+  max-width: 520px !important;
+  border-radius: 24px 24px 0 0 !important;
+  margin: 0 auto !important;
+  padding: 20px 18px 28px 18px !important;
+  background: rgba(14, 18, 28, 0.98) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-bottom: none !important;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.85) !important;
+  transform: translateY(100%) !important;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.song-actions-overlay.open .song-actions-card {
+  transform: translateY(0) !important;
+}
+
+.song-actions-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 14px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.song-actions-thumb {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
+}
+
+.song-actions-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.song-actions-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.song-actions-artist {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.song-actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 58vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sheet-action-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.sheet-action-item:hover, .sheet-action-item:active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sheet-action-icon {
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
 /* LRC Tapper Studio Item Styles */
 .tapper-line-item {
   display: flex;
@@ -1928,13 +2066,13 @@ html, body {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    padding: 6px 8px !important;
-    border-radius: var(--radius-sm) !important;
+    padding: 8px 10px !important;
+    border-radius: 10px !important;
     background: var(--bg-surface) !important;
     border: 1px solid var(--border-subtle) !important;
     width: 100% !important;
     box-sizing: border-box !important;
-    gap: 6px !important;
+    gap: 10px !important;
   }
   .song-row td {
     padding: 0 !important;
@@ -1947,21 +2085,22 @@ html, body {
   .song-row td:nth-child(2) {
     flex: 1 1 auto !important;
     min-width: 0 !important;
-    margin-right: 4px !important;
+    margin-right: 0 !important;
     overflow: hidden !important;
   }
   .song-cell-main {
     display: flex !important;
     align-items: center !important;
-    gap: 8px !important;
+    gap: 10px !important;
     width: 100% !important;
     min-width: 0 !important;
   }
   .song-thumbnail {
-    width: 42px !important;
-    height: 42px !important;
-    border-radius: 6px !important;
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 8px !important;
     flex-shrink: 0 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
   }
   .song-info-stack {
     display: flex !important;
@@ -1969,16 +2108,18 @@ html, body {
     min-width: 0 !important;
     overflow: hidden !important;
     flex: 1 !important;
+    gap: 2px !important;
   }
   .song-cell-title {
-    font-size: 0.85rem !important;
+    font-size: 0.9rem !important;
     font-weight: 600 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+    color: var(--text-primary) !important;
   }
   .song-cell-artist {
-    font-size: 0.72rem !important;
+    font-size: 0.75rem !important;
     color: var(--text-secondary) !important;
     white-space: nowrap !important;
     overflow: hidden !important;
@@ -1992,7 +2133,8 @@ html, body {
     display: flex !important;
     align-items: center !important;
     justify-content: flex-end !important;
-    width: auto !important;
+    width: 68px !important;
+    min-width: 68px !important;
     flex-shrink: 0 !important;
     padding-right: 0 !important;
     overflow: visible !important;
@@ -2000,32 +2142,60 @@ html, body {
   .action-btn-group {
     display: flex !important;
     align-items: center !important;
-    gap: 3px !important;
+    gap: 4px !important;
     flex-shrink: 0 !important;
     overflow: visible !important;
   }
+  .action-btn-desktop {
+    display: none !important;
+  }
+  .action-btn-mobile {
+    display: inline-flex !important;
+  }
   .heart-btn,
-  .offline-btn,
-  .add-pl-btn,
-  .remove-pl-btn,
-  .edit-meta-btn,
-  .trim-btn,
-  .lrc-btn {
-    width: 28px !important;
-    height: 28px !important;
-    min-width: 28px !important;
+  .more-opts-btn {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
     padding: 0 !important;
     flex-shrink: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
   .heart-btn svg,
-  .offline-btn svg,
-  .add-pl-btn svg,
-  .remove-pl-btn svg,
-  .edit-meta-btn svg,
-  .trim-btn svg,
-  .lrc-btn svg {
-    width: 14px !important;
-    height: 14px !important;
+  .more-opts-btn svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  /* Filter and Sort on Mobile */
+  .filter-sort-bar {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+  }
+  .filter-chips-scroll {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 2px 2px 4px 2px !important;
+    scrollbar-width: none !important;
+  }
+  .filter-chips-scroll::-webkit-scrollbar {
+    display: none !important;
+  }
+  .genre-filter-wrap {
+    width: 100% !important;
+  }
+  .genre-filter-select {
+    width: 100% !important;
+    height: 36px !important;
+    border-radius: var(--radius-sm) !important;
   }
 
   /* Bottom Navigation Bar */

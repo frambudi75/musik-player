@@ -504,6 +504,11 @@
           </svg>
         </button>
       </div>
+
+      <!-- Mobile Mini Player Live Progress Bar -->
+      <div class="mobile-player-progress" id="mobile-player-progress">
+        <div class="mobile-progress-fill" id="mobile-progress-fill"></div>
+      </div>
     </footer>
   </div>
 
@@ -519,7 +524,7 @@
     <canvas id="immersive-canvas" class="immersive-canvas-bg"></canvas>
     <div class="immersive-top-bar">
       <div style="display: flex; align-items: center; gap: 10px;">
-        <span style="font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; color: var(--text-secondary);">AURA IMMERSIVE KARAOKE</span>
+        <span style="font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; color: var(--text-secondary);">NADAKITA IMMERSIVE KARAOKE</span>
       </div>
       <button class="icon-btn" id="immersive-close-btn" title="Tutup Mode Layar Penuh (Esc)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1097,6 +1102,28 @@
             💾 Simpan Lirik Sinkron
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Song Actions Bottom Sheet Modal -->
+  <div class="modal-overlay song-actions-overlay" id="song-actions-modal">
+    <div class="modal-card song-actions-card" id="song-actions-card">
+      <div class="song-actions-header">
+        <img class="song-actions-thumb" id="song-actions-thumb" src="assets/sample_covers/placeholder.svg" alt="Cover" />
+        <div class="song-actions-meta">
+          <div class="song-actions-title" id="song-actions-title">Judul Lagu</div>
+          <div class="song-actions-artist" id="song-actions-artist">Nama Artis</div>
+        </div>
+        <button class="modal-close-btn" id="song-actions-close-btn" title="Tutup">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="song-actions-list" id="song-actions-list">
+        <!-- Rendered dynamically by JS -->
       </div>
     </div>
   </div>
