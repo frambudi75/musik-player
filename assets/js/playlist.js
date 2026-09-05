@@ -90,14 +90,28 @@ class PlaylistManager {
   getStatsSummary() {
     const totalMinutes = Math.round((this.stats.totalSeconds || 0) / 60);
     
+    // Formatted time string (e.g. "1 Jam 15 Menit" or "45 Menit")
+    let formattedTime = `${totalMinutes} Menit`;
+    if (totalMinutes >= 60) {
+      const hours = Math.floor(totalMinutes / 60);
+      const mins = totalMinutes % 60;
+      formattedTime = mins > 0 ? `${hours} Jam ${mins} Menit` : `${hours} Jam`;
+    }
+
+    // Genre count aggregation
+    const genreCounts = {};
+    
     // Top Tracks
     const topTracks = Object.entries(this.stats.trackPlays || {})
       .map(([id, count]) => {
         const song = this.getSongById(id);
+        const genre = song?.genre || 'Audio';
+        genreCounts[genre] = (genreCounts[genre] || 0) + count;
+
         return {
           id,
           count,
-          song: song || { id, title: 'Unknown Track', artist: 'Unknown' }
+          song: song || { id, title: 'Unknown Track', artist: 'Unknown', cover: 'assets/sample_covers/placeholder.svg', genre: 'Audio' }
         };
       })
       .sort((a, b) => b.count - a.count)
@@ -107,11 +121,30 @@ class PlaylistManager {
     const topArtists = Object.entries(this.stats.artistPlays || {})
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
+      .slice(0, 8);
+
+    // Top Genre
+    const sortedGenres = Object.entries(genreCounts).sort((a, b) => b[1] - a[1]);
+    const topGenre = sortedGenres.length > 0 ? sortedGenres[0][0] : 'Audio';
+
+    // Listener Persona
+    let persona = '🎧 Penikmat Musik Aktif';
+    if (totalMinutes > 120) {
+      persona = '⚡ Marathon Listener 🚀';
+    } else if (topTracks.length > 0 && topTracks[0].count >= 5) {
+      persona = '🔥 Replay On Loop Addict';
+    } else if (topArtists.length >= 5) {
+      persona = '🌟 Diverse Sound Explorer';
+    }
 
     return {
       totalPlays: this.stats.totalPlays || 0,
       totalMinutes,
+      formattedTime,
+      topGenre,
+      persona,
+      favoriteSong: topTracks.length > 0 ? topTracks[0] : null,
+      favoriteArtist: topArtists.length > 0 ? topArtists[0] : null,
       topTracks,
       topArtists,
       recentHistory: this.stats.history || []

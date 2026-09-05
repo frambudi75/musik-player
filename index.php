@@ -296,32 +296,109 @@
 
         <!-- Statistics & Wrapped View (Hidden by default) -->
         <div id="stats-view-wrap" style="display: none;">
-          <div class="stats-overview-grid">
-            <div class="stat-card">
-              <span class="stat-num" id="stat-total-minutes">0</span>
-              <span class="stat-label">Menit Didengarkan</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-num" id="stat-total-plays">0</span>
-              <span class="stat-label">Total Pemutaran Lagu</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-num" id="stat-total-artists">0</span>
-              <span class="stat-label">Artis Berbeda</span>
+          <!-- Wrapped Banner Hero -->
+          <div class="stats-hero-banner">
+            <div class="stats-hero-glow"></div>
+            <div class="stats-hero-content">
+              <div class="stats-hero-left">
+                <span class="stats-hero-tag">✨ NADAKITA STATS & WRAPPED</span>
+                <h2 class="stats-hero-title">Kilasan Musik Anda</h2>
+                <p class="stats-hero-subtitle">Berdasarkan kebiasaan mendengarkan lagu di pemutar NadaKita.</p>
+                <div class="stats-badges-row">
+                  <span class="persona-chip" id="stat-persona-badge">🎧 Penikmat Musik Aktif</span>
+                  <span class="persona-chip" id="stat-genre-badge">🎵 Genre: Audio</span>
+                </div>
+              </div>
+              <div class="stats-hero-spotlight" id="stats-top-spotlight">
+                <!-- Rendered dynamically by JS -->
+              </div>
             </div>
           </div>
 
-          <div class="stats-sections-flex" style="display: flex; gap: 24px; margin-top: 28px; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 300px;">
-              <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary);">🔥 Top 10 Lagu Paling Sering Diputar</h3>
+          <!-- 4 Rich KPI Metric Cards -->
+          <div class="stats-overview-grid">
+            <div class="stat-card stat-card-time">
+              <div class="stat-card-top">
+                <div class="stat-icon-box stat-icon-blue">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                </div>
+                <span class="stat-badge-sub" id="stat-time-detail">0 Menit</span>
+              </div>
+              <div class="stat-num" id="stat-total-minutes">0</div>
+              <div class="stat-label">Total Menit Didengar</div>
+            </div>
+
+            <div class="stat-card stat-card-plays">
+              <div class="stat-card-top">
+                <div class="stat-icon-box stat-icon-purple">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                </div>
+                <span class="stat-badge-sub">Riwayat Putar</span>
+              </div>
+              <div class="stat-num" id="stat-total-plays">0</div>
+              <div class="stat-label">Total Pemutaran Lagu</div>
+            </div>
+
+            <div class="stat-card stat-card-artists">
+              <div class="stat-card-top">
+                <div class="stat-icon-box stat-icon-pink">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+                </div>
+                <span class="stat-badge-sub">Musisi Unik</span>
+              </div>
+              <div class="stat-num" id="stat-total-artists">0</div>
+              <div class="stat-label">Artis Berbeda</div>
+            </div>
+
+            <div class="stat-card stat-card-top-artist">
+              <div class="stat-card-top">
+                <div class="stat-icon-box stat-icon-amber">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                </div>
+                <span class="stat-badge-sub" id="stat-top-artist-plays">0x Putar</span>
+              </div>
+              <div class="stat-num stat-artist-name" id="stat-top-artist-name">-</div>
+              <div class="stat-label">Artis Paling Sering Diputar</div>
+            </div>
+          </div>
+
+          <!-- Detailed 2-Column Analytics Showcase -->
+          <div class="stats-sections-flex">
+            <!-- Left: Top 10 Tracks with artwork & instant play -->
+            <div class="stats-col-left">
+              <div class="stats-section-header">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 1.2rem;">🔥</span>
+                  <h3 class="stats-section-title">Top 10 Lagu Paling Sering Diputar</h3>
+                </div>
+                <span class="stats-section-hint">Klik untuk langsung putar</span>
+              </div>
               <div class="top-tracks-list" id="top-tracks-container">
-                <!-- Dynamic Top Tracks -->
+                <!-- Dynamic Rich Top Tracks -->
               </div>
             </div>
-            <div style="flex: 1; min-width: 260px;">
-              <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary);">⭐ Top Artis Favorit</h3>
+
+            <!-- Right: Top Artists & Music Personality Card -->
+            <div class="stats-col-right">
+              <div class="stats-section-header">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 1.2rem;">⭐</span>
+                  <h3 class="stats-section-title">Top Artis Favorit</h3>
+                </div>
+              </div>
               <div class="top-artists-list" id="top-artists-container">
                 <!-- Dynamic Top Artists -->
+              </div>
+
+              <!-- Quick Listening Insight Card -->
+              <div class="stats-insight-card">
+                <div class="insight-header">
+                  <span style="font-size: 1.15rem;">💡</span>
+                  <span style="font-weight: 700; font-size: 0.92rem; color: var(--text-primary);">Wawasan Koleksi Musik</span>
+                </div>
+                <p class="insight-text" id="stat-insight-text">
+                  Lagu di NadaKita disimpan secara lokal dengan responsivitas tinggi, visualizer realtime, dan pemutar audio fidelitas tinggi.
+                </p>
               </div>
             </div>
           </div>

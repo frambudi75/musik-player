@@ -743,60 +743,202 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Render Statistics View
+  // Render Statistics & Wrapped View
   function renderStatsView() {
     const summary = window.PlaylistManager.getStatsSummary();
     const statMinutesEl = document.getElementById('stat-total-minutes');
+    const statTimeDetailEl = document.getElementById('stat-time-detail');
     const statPlaysEl = document.getElementById('stat-total-plays');
     const statArtistsEl = document.getElementById('stat-total-artists');
+    const statTopArtistNameEl = document.getElementById('stat-top-artist-name');
+    const statTopArtistPlaysEl = document.getElementById('stat-top-artist-plays');
+    const statPersonaBadge = document.getElementById('stat-persona-badge');
+    const statGenreBadge = document.getElementById('stat-genre-badge');
+    const spotlightContainer = document.getElementById('stats-top-spotlight');
     const topTracksContainer = document.getElementById('top-tracks-container');
     const topArtistsContainer = document.getElementById('top-artists-container');
+    const statInsightText = document.getElementById('stat-insight-text');
 
     if (statMinutesEl) statMinutesEl.textContent = summary.totalMinutes;
+    if (statTimeDetailEl) statTimeDetailEl.textContent = `~${summary.formattedTime}`;
     if (statPlaysEl) statPlaysEl.textContent = summary.totalPlays;
     if (statArtistsEl) statArtistsEl.textContent = summary.topArtists.length;
+    if (statPersonaBadge) statPersonaBadge.textContent = summary.persona;
+    if (statGenreBadge) statGenreBadge.textContent = `🎵 Genre Dominan: ${summary.topGenre || 'Audio'}`;
 
+    if (summary.favoriteArtist) {
+      if (statTopArtistNameEl) statTopArtistNameEl.textContent = summary.favoriteArtist.name;
+      if (statTopArtistPlaysEl) statTopArtistPlaysEl.textContent = `${summary.favoriteArtist.count}x Putar`;
+    } else {
+      if (statTopArtistNameEl) statTopArtistNameEl.textContent = '-';
+      if (statTopArtistPlaysEl) statTopArtistPlaysEl.textContent = '0x Putar';
+    }
+
+    // Hero Spotlight Card for #1 Most Played Song
+    if (spotlightContainer) {
+      if (summary.favoriteSong && summary.favoriteSong.song) {
+        const topSong = summary.favoriteSong.song;
+        const topCover = getSafeCoverUrl(topSong);
+        spotlightContainer.innerHTML = `
+          <div class="stats-spotlight-card" id="stats-spotlight-btn" title="Putar Lagu Juara 1 Ini">
+            <div class="spotlight-crown-badge">👑 JUARA 1 DIPUTAR PALING BANYAK</div>
+            <div class="spotlight-body">
+              <div class="spotlight-cover-wrap">
+                <img class="spotlight-cover" src="${escapeHTML(topCover)}" alt="Cover" />
+                <div class="spotlight-play-overlay">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                </div>
+              </div>
+              <div class="spotlight-meta">
+                <div class="spotlight-title">${escapeHTML(topSong.title)}</div>
+                <div class="spotlight-artist">${escapeHTML(topSong.artist)}</div>
+                <div class="spotlight-play-tag">🔥 Diputar ${summary.favoriteSong.count} kali</div>
+              </div>
+            </div>
+          </div>
+        `;
+        const spotBtn = document.getElementById('stats-spotlight-btn');
+        if (spotBtn) {
+          spotBtn.onclick = () => {
+            const trk = window.PlaylistManager.getSongById(summary.favoriteSong.id) || topSong;
+            if (trk) window.PlaylistManager.playTrack(trk);
+          };
+        }
+      } else {
+        spotlightContainer.innerHTML = `
+          <div class="stats-spotlight-card empty">
+            <div style="font-size: 2rem; margin-bottom: 4px;">🎶</div>
+            <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary);">Mulai Mendengarkan</div>
+            <div style="font-size: 0.76rem; color: var(--text-secondary); margin-top: 2px;">Putar lagu untuk membuka kilasan Wrapped Anda</div>
+          </div>
+        `;
+      }
+    }
+
+    // Top 10 Tracks List
     if (topTracksContainer) {
       topTracksContainer.innerHTML = '';
       if (summary.topTracks.length === 0) {
-        topTracksContainer.innerHTML = `<div style="color: var(--text-tertiary); font-size: 0.85rem;">Belum ada riwayat pemutaran. Putar lagu untuk melihat statistik Anda!</div>`;
+        topTracksContainer.innerHTML = `
+          <div style="text-align: center; padding: 32px 16px; color: var(--text-tertiary); background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+            <div style="font-size: 2rem; margin-bottom: 8px;">🎧</div>
+            <p style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary);">Belum ada riwayat lagu yang diputar</p>
+            <p style="font-size: 0.78rem; margin-top: 4px;">Pilih lagu dari Koleksi dan nikmati musik favorit Anda!</p>
+          </div>
+        `;
       } else {
+        const maxCount = Math.max(...summary.topTracks.map(t => t.count), 1);
         summary.topTracks.forEach((item, i) => {
+          const trackSong = item.song || window.PlaylistManager.getSongById(item.id) || { title: 'Unknown Track', artist: 'Unknown' };
+          const coverSrc = getSafeCoverUrl(trackSong);
+          const percent = Math.round((item.count / maxCount) * 100);
+
+          let rankBadge = `<span class="stat-rank-pill rank-normal">#${i + 1}</span>`;
+          if (i === 0) rankBadge = `<span class="stat-rank-pill rank-gold">🥇 #1</span>`;
+          else if (i === 1) rankBadge = `<span class="stat-rank-pill rank-silver">🥈 #2</span>`;
+          else if (i === 2) rankBadge = `<span class="stat-rank-pill rank-bronze">🥉 #3</span>`;
+
           const row = document.createElement('div');
           row.className = 'top-track-card';
           row.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
-              <span style="font-family: var(--font-mono); font-weight: 700; color: ${i === 0 ? 'var(--accent-amber)' : 'var(--text-tertiary)'}; font-size: 0.95rem; width: 22px;">#${i + 1}</span>
-              <div style="display: flex; flex-direction: column; min-width: 0;">
-                <span style="font-weight: 600; color: var(--text-primary); font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(item.song.title)}</span>
-                <span style="font-size: 0.75rem; color: var(--text-secondary);">${escapeHTML(item.song.artist)}</span>
+            <div class="top-track-rank-box">
+              ${rankBadge}
+            </div>
+            <div class="top-track-cover-box">
+              <img class="top-track-thumb" src="${escapeHTML(coverSrc)}" alt="Cover" loading="lazy" onerror="this.src='${DEFAULT_COVER}'" />
+              <div class="top-track-play-hover">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
               </div>
             </div>
-            <span style="font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; color: var(--accent-primary); background: var(--accent-subtle); padding: 4px 8px; border-radius: var(--radius-full);">${item.count}x</span>
+            <div class="top-track-info-box">
+              <div class="top-track-title-row">
+                <span class="top-track-title">${escapeHTML(trackSong.title)}</span>
+              </div>
+              <div class="top-track-sub-row">
+                <span class="top-track-artist">${escapeHTML(trackSong.artist)}</span>
+                <div class="top-track-progress-track">
+                  <div class="top-track-progress-fill" style="width: ${percent}%;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="top-track-count-badge">
+              <span>🔥 ${item.count}x</span>
+            </div>
           `;
+
           row.onclick = () => {
-            const track = window.PlaylistManager.getSongById(item.id);
+            const track = window.PlaylistManager.getSongById(item.id) || trackSong;
             if (track) window.PlaylistManager.playTrack(track);
           };
+
           topTracksContainer.appendChild(row);
         });
       }
     }
 
+    // Top Artists Leaderboard
     if (topArtistsContainer) {
       topArtistsContainer.innerHTML = '';
       if (summary.topArtists.length === 0) {
-        topArtistsContainer.innerHTML = `<div style="color: var(--text-tertiary); font-size: 0.85rem;">Belum ada data artis.</div>`;
+        topArtistsContainer.innerHTML = `
+          <div style="text-align: center; padding: 24px 16px; color: var(--text-tertiary); background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+            Belum ada data artis yang tersimpan.
+          </div>
+        `;
       } else {
+        const maxArtistCount = Math.max(...summary.topArtists.map(a => a.count), 1);
         summary.topArtists.forEach((item, i) => {
+          const percent = Math.round((item.count / maxArtistCount) * 100);
+          const initial = (item.name || 'A').trim().charAt(0).toUpperCase();
+
+          let medalClass = 'avatar-normal';
+          if (i === 0) medalClass = 'avatar-gold';
+          else if (i === 1) medalClass = 'avatar-silver';
+          else if (i === 2) medalClass = 'avatar-bronze';
+
           const row = document.createElement('div');
           row.className = 'top-artist-item';
           row.innerHTML = `
-            <span style="font-weight: 600; color: var(--text-primary); font-size: 0.88rem;">${escapeHTML(item.name)}</span>
-            <span style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-secondary);">${item.count} lagu diputar</span>
+            <div class="artist-rank-avatar ${medalClass}">
+              <span>${i === 0 ? '👑' : initial}</span>
+            </div>
+            <div class="artist-info-stack">
+              <div class="artist-name-row">
+                <span class="artist-name">${escapeHTML(item.name)}</span>
+                <span class="artist-count-tag">${item.count} lagu diputar</span>
+              </div>
+              <div class="artist-bar-track">
+                <div class="artist-bar-fill" style="width: ${percent}%;"></div>
+              </div>
+            </div>
           `;
+
+          row.onclick = () => {
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) {
+              // Switch to library tab and search for artist
+              const libNavBtn = document.querySelector('.nav-item[data-tab="library"]');
+              if (libNavBtn) libNavBtn.click();
+              searchInput.value = item.name;
+              searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+          };
+
           topArtistsContainer.appendChild(row);
         });
+      }
+    }
+
+    // Personalized Insight Text
+    if (statInsightText) {
+      if (summary.totalPlays > 0) {
+        statInsightText.innerHTML = `
+          🎉 Anda telah menghabiskan waktu sekitar <strong>${escapeHTML(summary.formattedTime)}</strong> mendengarkan musik di NadaKita dengan <strong>${summary.totalPlays} total pemutaran</strong> lagu. Artis yang paling menemani Anda adalah <strong>${escapeHTML(summary.favoriteArtist ? summary.favoriteArtist.name : 'beragam artis')}</strong>.
+        `;
+      } else {
+        statInsightText.innerHTML = `
+          Belum ada lagu yang diputar dalam sesi ini. Putar lagu favorit Anda dari koleksi lokal untuk menghasilkan wawasan mendengarkan yang unik!
+        `;
       }
     }
   }
