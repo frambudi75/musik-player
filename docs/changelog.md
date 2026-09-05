@@ -4,6 +4,18 @@ Semua pembaruan penting, penambahan fitur, dan perbaikan bug didokumentasikan di
 
 ---
 
+## [v2.5.0] - 2026-09-06
+### 🎧 DSP Studio: Dolby 3D Surround & Live Concert Hall Modes
+* **🌐 Dolby 3D Spatial Surround Widener**:
+  * Menggunakan algoritma *Haas Effect Crossfeed Decorrelation* (micro-delay 15ms antar channel L/R berfase inversi) yang melebarkan panggung suara (*soundstage*) ke luar batas fisik headphone/speaker.
+  * Dilengkapi *Psychoacoustic High-Air Filter* (+3.5dB pada 7.5kHz) untuk kejernihan vokal dan separasi detail instrumen yang luas dan megah.
+* **🏟️ Live Concert & Stadium Hall Mode**:
+  * *Synthetic Arena Convolver Reverb*: Mensimulasikan pantulan awal (*early discrete reflections*) dinding dan atap stadion besar dengan ekor gema *decay* 3.4 detik.
+  * *Live Stage EQ Punch*: Boost sub-bass 64Hz (+7dB) dan frekuensi panggung terbuka untuk menghadirkan atmosfer konser nyata.
+* **Integrasi UI**: Dua tombol chip baru (`Dolby 3D Surround 🌐` dan `Live Concert Hall 🏟️`) langsung diakses di modal **Studio Equalizer & DSP FX**.
+
+---
+
 ## [v2.4.0] - 2026-09-06
 ### 🛠️ Pindai Duplikat & Penghapusan Cerdas
 * **Akurat Tanpa False Positive**: Pemisahan judul inti (*core title*) dan artis kini memperhitungkan normalisasi karakter Unicode dash (`–`, `—`, `−`, `|`), mencegah salah grup lagu berbeda dari artis yang sama.
