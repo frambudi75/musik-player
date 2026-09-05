@@ -131,7 +131,8 @@
                 <circle cx="11" cy="11" r="8"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
-              <input type="text" id="search-input" class="search-input" placeholder="Cari lagu, artis, atau album..." />
+              <input type="text" id="search-input" class="search-input" placeholder="Cari lagu, artis, album, nama file..." />
+              <button type="button" id="search-clear-btn" class="search-clear-btn" title="Hapus pencarian" style="display: none;">&times;</button>
             </div>
           </div>
           <div class="header-right">

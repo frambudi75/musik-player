@@ -356,7 +356,7 @@ html, body {
 .search-input {
   width: 100%;
   height: 40px;
-  padding: 0 16px 0 40px;
+  padding: 0 38px 0 40px;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-full);
@@ -365,6 +365,33 @@ html, body {
   font-size: 0.88rem;
   outline: none;
   transition: var(--transition-smooth);
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 1.25rem;
+  line-height: 1;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: var(--transition-fast);
+  padding: 0;
+  user-select: none;
+}
+
+.search-clear-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface-elevated);
 }
 
 .search-input:focus {
@@ -1868,7 +1895,8 @@ html, body {
   .section-title {
     font-size: 1.1rem;
   }
-  #quick-rescan-btn span {
+  #quick-rescan-btn span,
+  #health-check-btn span {
     display: none;
   }
 
@@ -1969,18 +1997,20 @@ html, body {
     overflow: visible !important;
   }
   .heart-btn,
+  .offline-btn,
   .add-pl-btn,
   .remove-pl-btn,
   .edit-meta-btn,
   .trim-btn,
   .lrc-btn {
-    width: 26px !important;
-    height: 26px !important;
-    min-width: 26px !important;
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
     padding: 0 !important;
     flex-shrink: 0 !important;
   }
   .heart-btn svg,
+  .offline-btn svg,
   .add-pl-btn svg,
   .remove-pl-btn svg,
   .edit-meta-btn svg,

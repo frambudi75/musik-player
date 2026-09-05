@@ -6,6 +6,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
   // UI Elements
   const searchInput = document.getElementById('search-input');
+  const searchClearBtn = document.getElementById('search-clear-btn');
   const songTableBody = document.getElementById('song-table-body');
   const songsGrid = document.getElementById('songs-grid');
   const tableViewWrap = document.getElementById('table-view-wrap');
@@ -205,6 +206,48 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let currentSortMode = 'default';
   let currentGenreFilter = '';
+  let currentViewMode = 'table';
+
+  // Multi-Token Fuzzy Search Normalizer
+  function normalizeSearchText(str) {
+    if (!str) return '';
+    return str
+      .toString()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // remove diacritics / accents
+      .toLowerCase()
+      .replace(/[_\-.\(\)\[\]{}'"`]/g, ' ') // replace punctuation & separators with spaces
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function matchSongQuery(song, queryTokens, rawTokens) {
+    const normTitle = normalizeSearchText(song.title);
+    const normArtist = normalizeSearchText(song.artist);
+    const normAlbum = normalizeSearchText(song.album || '');
+    const normFilename = normalizeSearchText(song.filename || '');
+    const normGenre = normalizeSearchText(song.genre || '');
+    const combinedNorm = `${normTitle} ${normArtist} ${normAlbum} ${normFilename} ${normGenre}`;
+
+    // All query tokens must match somewhere in the combined metadata
+    return queryTokens.every((token, idx) => {
+      const rawToken = rawTokens[idx];
+      return combinedNorm.includes(token) || (rawToken && combinedNorm.includes(rawToken));
+    });
+  }
+
+  function filterSongsByQuery(songs, rawQuery) {
+    const cleanQuery = (rawQuery || '').trim();
+    if (!cleanQuery) return songs;
+
+    const normQuery = normalizeSearchText(cleanQuery);
+    const queryTokens = normQuery.split(' ').filter(Boolean);
+    const rawTokens = cleanQuery.toLowerCase().split(/\s+/).filter(Boolean);
+
+    if (queryTokens.length === 0) return songs;
+
+    return songs.filter((s) => matchSongQuery(s, queryTokens, rawTokens));
+  }
 
   // Update Genre Filter Dropdown Options
   function updateGenreFilterOptions() {
@@ -466,15 +509,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Fast Grid View Renderer (Single Layout Pass)
   function renderSongGrid(songs) {
     if (songs.length === 0) {
-      songsGrid.innerHTML = '';
+      songsGrid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-tertiary);">
+          Tidak ada lagu yang ditemukan di koleksi
+        </div>
+      `;
       return;
     }
 
     const currentSongId = window.PlaylistManager.currentSong ? window.PlaylistManager.currentSong.id : null;
+    const isInsideCustomPlaylist = currentNavTab === 'playlist' && currentActivePlaylistId && currentActivePlaylistId !== 'favorites';
 
     const cardsHtml = songs.map((song) => {
       songsMap.set(song.id, song);
       const isPlaying = currentSongId === song.id;
+      const isLiked = window.PlaylistManager.isLiked(song.id);
       const isSaved = song.isOffline || (window.OfflineDB && window.OfflineDB.hasOfflineBlob(song.id));
       const coverSrc = getSafeCoverUrl(song);
 
@@ -488,44 +537,59 @@ document.addEventListener('DOMContentLoaded', async () => {
               </svg>
             </div>
           </div>
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px;">
             <div style="min-width: 0; flex: 1;">
               <div class="card-title">${escapeHTML(song.title)}</div>
               <div class="card-subtitle">${escapeHTML(song.artist)}</div>
             </div>
-            <div style="display: flex; align-items: center; gap: 4px;">
-              <button class="offline-btn offline-card-btn ${isSaved ? 'saved' : ''}" style="width: 24px; height: 24px;" title="${isSaved ? 'Tersimpan Offline' : 'Simpan Offline'}" data-action="offline" data-id="${escapeHTML(song.id)}">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <div class="card-actions-group" style="display: flex; align-items: center; gap: 4px; position: relative; z-index: 2;">
+              <button class="heart-btn heart-card-btn ${isLiked ? 'liked' : ''}" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="${isLiked ? 'Batal Suka' : 'Suka'}" data-action="like" data-id="${escapeHTML(song.id)}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                </svg>
+              </button>
+              <button class="offline-btn offline-card-btn ${isSaved ? 'saved' : ''}" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="${isSaved ? 'Hapus dari Penyimpanan Offline' : 'Simpan Offline'}" data-action="offline" data-id="${escapeHTML(song.id)}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
               </button>
-              <button class="trim-btn trim-card-btn" style="width: 24px; height: 24px;" title="Potong Ringtone" data-action="trim" data-id="${escapeHTML(song.id)}">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button class="trim-btn trim-card-btn" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="Potong Ringtone" data-action="trim" data-id="${escapeHTML(song.id)}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="6" cy="6" r="3"></circle>
                   <circle cx="6" cy="18" r="3"></circle>
                   <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                  <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                  <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
                 </svg>
               </button>
-              <button class="lrc-btn lrc-card-btn" style="width: 24px; height: 24px;" title="Buat Lirik LRC" data-action="lrc" data-id="${escapeHTML(song.id)}">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button class="lrc-btn lrc-card-btn" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="Buat Lirik LRC" data-action="lrc" data-id="${escapeHTML(song.id)}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
                   <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
                 </svg>
               </button>
-              <button class="edit-meta-btn edit-card-btn" style="width: 24px; height: 24px;" title="Edit Info" data-action="edit-meta" data-id="${escapeHTML(song.id)}">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button class="edit-meta-btn edit-card-btn" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="Edit Info" data-action="edit-meta" data-id="${escapeHTML(song.id)}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 20h9"></path>
                   <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
                 </svg>
               </button>
-              <button class="icon-btn add-pl-card-btn" style="width: 24px; height: 24px; flex-shrink: 0;" title="Tambah ke Playlist" data-action="add-pl" data-id="${escapeHTML(song.id)}">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button class="icon-btn add-pl-card-btn" style="width: 28px; height: 28px; min-width: 28px; padding: 0; flex-shrink: 0;" title="Tambah ke Playlist" data-action="add-pl" data-id="${escapeHTML(song.id)}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
               </button>
+              ${isInsideCustomPlaylist ? `
+                <button class="remove-pl-btn remove-pl-card-btn" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="Hapus dari playlist ini" data-action="remove-pl" data-id="${escapeHTML(song.id)}">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              ` : ''}
             </div>
           </div>
         </div>
@@ -546,6 +610,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!song) return;
 
     if (btn) {
+      e.stopPropagation();
       const action = btn.dataset.action;
       if (action === 'like') {
         const liked = await window.PlaylistManager.toggleLike(song.id);
@@ -607,8 +672,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!song) return;
 
     if (btn) {
+      e.stopPropagation();
       const action = btn.dataset.action;
-      if (action === 'offline') {
+      if (action === 'like') {
+        const liked = await window.PlaylistManager.toggleLike(song.id);
+        btn.classList.toggle('liked', liked);
+        btn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
+        if (window.PlaylistManager.currentSong && window.PlaylistManager.currentSong.id === song.id) {
+          playerHeartBtn.classList.toggle('liked', liked);
+          playerHeartBtn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
+        }
+        showToast(liked ? 'Ditambahkan ke Liked Songs' : 'Dihapus dari Liked Songs');
+        if (currentNavTab === 'liked') renderCurrentView();
+      } else if (action === 'offline') {
         const isSaved = await window.OfflineDB.isSaved(song.id);
         if (isSaved) {
           await window.OfflineDB.removeTrack(song.id);
@@ -636,6 +712,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         openLrcMakerModal(song);
       } else if (action === 'edit-meta') {
         openEditMetadataModal(song);
+      } else if (action === 'remove-pl') {
+        await window.PlaylistManager.removeSongFromPlaylist(currentActivePlaylistId, song.id);
+        showToast('Lagu dihapus dari playlist', '✓');
+        renderSidebarPlaylists();
+        renderCurrentView();
       }
     } else {
       window.PlaylistManager.playTrack(song, currentDisplayedSongs);
@@ -716,9 +797,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('section-header').style.display = 'flex';
     statsViewWrap.style.display = 'none';
 
-    let list = [...window.PlaylistManager.library];
-    const query = (searchInput.value || '').trim().toLowerCase();
+    // Set view container visibility according to currentViewMode
+    if (currentViewMode === 'grid') {
+      tableViewWrap.style.display = 'none';
+      songsGrid.style.display = 'grid';
+    } else {
+      tableViewWrap.style.display = 'table';
+      songsGrid.style.display = 'none';
+    }
 
+    let list = [...window.PlaylistManager.library];
+    const rawQuery = (searchInput.value || '').trim();
+    if (searchClearBtn) {
+      searchClearBtn.style.display = rawQuery ? 'flex' : 'none';
+    }
+
+    let isScopedSearch = false;
     if (currentNavTab === 'offline') {
       try {
         const savedTracks = await window.OfflineDB.getAllSavedSongs();
@@ -728,11 +822,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         list = [];
         sectionTitle.textContent = 'Lagu Tersimpan Offline (0)';
       }
+      isScopedSearch = true;
     } else if (currentNavTab === 'liked') {
       const fav = window.PlaylistManager.playlists.find((p) => p.id === 'favorites');
       const likedIds = fav ? fav.song_ids : [];
       list = list.filter((s) => likedIds.includes(s.id));
       sectionTitle.innerHTML = 'Liked Songs';
+      isScopedSearch = true;
     } else if (currentNavTab === 'playlist' && currentActivePlaylistId) {
       const pl = window.PlaylistManager.playlists.find((p) => p.id === currentActivePlaylistId);
       if (pl) {
@@ -763,17 +859,27 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         }, 50);
       }
+      isScopedSearch = true;
     } else {
       sectionTitle.textContent = 'Koleksi Musik';
     }
 
-    if (query) {
-      list = list.filter((s) =>
-        s.title.toLowerCase().includes(query) ||
-        s.artist.toLowerCase().includes(query) ||
-        (s.album && s.album.toLowerCase().includes(query))
-      );
-      sectionTitle.textContent = `Hasil Pencarian "${query}"`;
+    if (rawQuery) {
+      const filtered = filterSongsByQuery(list, rawQuery);
+      // Smart Fallback: If 0 results in current scoped tab (liked/playlist/offline), fallback to searching general library!
+      if (filtered.length === 0 && isScopedSearch && window.PlaylistManager.library.length > 0) {
+        const globalFiltered = filterSongsByQuery(window.PlaylistManager.library, rawQuery);
+        if (globalFiltered.length > 0) {
+          list = globalFiltered;
+          sectionTitle.textContent = `Hasil Pencarian Global "${rawQuery}" (${list.length})`;
+        } else {
+          list = [];
+          sectionTitle.textContent = `Hasil Pencarian "${rawQuery}" (0)`;
+        }
+      } else {
+        list = filtered;
+        sectionTitle.textContent = `Hasil Pencarian "${rawQuery}" (${list.length})`;
+      }
     }
 
     // Genre Filter
@@ -792,8 +898,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       list.sort((a, b) => a.artist.localeCompare(b.artist));
     }
 
-    renderSongTable(list);
-    renderSongGrid(list);
+    // Fast Single-View Rendering (Eliminates double layout thrashing)
+    if (currentViewMode === 'grid') {
+      renderSongGrid(list);
+    } else {
+      renderSongTable(list);
+    }
   }
 
   // Render Sidebar Playlists List
@@ -1227,8 +1337,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     clearTimeout(searchDebounceTimer);
     searchDebounceTimer = setTimeout(() => {
       renderCurrentView();
-    }, 80);
+    }, 60);
   });
+
+  if (searchClearBtn) {
+    searchClearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      searchInput.value = '';
+      searchClearBtn.style.display = 'none';
+      searchInput.focus();
+      renderCurrentView();
+    });
+  }
 
   // Sort & Filter Bar
   const filterChips = document.querySelectorAll('.filter-chip');
@@ -1255,14 +1375,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     btn.addEventListener('click', () => {
       viewToggleBtns.forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
-      const mode = btn.dataset.view;
-      if (mode === 'grid') {
-        tableViewWrap.style.display = 'none';
-        songsGrid.style.display = 'grid';
-      } else {
-        tableViewWrap.style.display = 'table';
-        songsGrid.style.display = 'none';
-      }
+      currentViewMode = btn.dataset.view || 'table';
+      renderCurrentView();
     });
   });
 
