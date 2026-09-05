@@ -218,7 +218,7 @@
 
         <!-- Library Header & View Switcher -->
         <div class="section-header" id="section-header">
-          <div style="display: flex; align-items: center; gap: 14px;">
+          <div class="section-header-left">
             <h2 class="section-title" id="section-title">Koleksi Musik</h2>
             <button class="btn-subtle-scan" id="quick-rescan-btn" title="Pindai ulang folder">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
