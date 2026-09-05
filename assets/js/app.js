@@ -904,8 +904,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
             <div class="artist-info-stack">
               <div class="artist-name-row">
-                <span class="artist-name">${escapeHTML(item.name)}</span>
-                <span class="artist-count-tag">${item.count} lagu diputar</span>
+                <span class="artist-name" title="${escapeHTML(item.name)}">${escapeHTML(item.name)}</span>
+                <span class="artist-count-tag">${item.count} Lagu</span>
               </div>
               <div class="artist-bar-track">
                 <div class="artist-bar-fill" style="width: ${percent}%;"></div>

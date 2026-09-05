@@ -301,7 +301,8 @@ html, body {
   display: flex;
   flex-direction: column;
   position: relative;
-  padding: 0 28px 24px;
+  padding: 0 28px calc(var(--player-height, 90px) + 36px);
+  box-sizing: border-box;
 }
 
 .main-content::-webkit-scrollbar {
@@ -2028,14 +2029,21 @@ html, body {
 /* 2-Column Analytics Flex */
 .stats-sections-flex {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
   gap: 24px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin-bottom: 24px;
 }
 
 .stats-col-left, .stats-col-right {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .stats-section-header {
@@ -2044,17 +2052,24 @@ html, body {
   justify-content: space-between;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border-subtle);
+  min-width: 0;
+  width: 100%;
 }
 
 .stats-section-title {
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .stats-section-hint {
   font-size: 0.75rem;
   color: var(--text-tertiary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Top Tracks List items */
@@ -2062,6 +2077,8 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
+  width: 100%;
 }
 
 .top-track-card {
@@ -2074,6 +2091,10 @@ html, body {
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: var(--transition-smooth);
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .top-track-card:hover {
@@ -2162,6 +2183,7 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  overflow: hidden;
 }
 
 .top-track-title {
@@ -2178,6 +2200,8 @@ html, body {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+  width: 100%;
 }
 
 .top-track-artist {
@@ -2187,10 +2211,12 @@ html, body {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 140px;
+  flex-shrink: 1;
 }
 
 .top-track-progress-track {
   flex: 1;
+  min-width: 20px;
   height: 4px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-full);
@@ -2221,6 +2247,8 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
+  width: 100%;
 }
 
 .top-artist-item {
@@ -2233,6 +2261,10 @@ html, body {
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: var(--transition-smooth);
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .top-artist-item:hover {
@@ -2281,15 +2313,21 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  overflow: hidden;
 }
 
 .artist-name-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
 }
 
 .artist-name {
+  flex: 1;
+  min-width: 0;
   font-size: 0.88rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -2303,6 +2341,9 @@ html, body {
   font-size: 0.74rem;
   color: var(--text-secondary);
   font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-left: 4px;
 }
 
 .artist-bar-track {
