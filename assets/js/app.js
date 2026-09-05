@@ -1546,6 +1546,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Smooth Mouse Wheel & Drag-to-Scroll for Filter Chips
+  const filterChipsScrollContainer = document.querySelector('.filter-chips-scroll');
+  if (filterChipsScrollContainer) {
+    filterChipsScrollContainer.addEventListener('wheel', (e) => {
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        filterChipsScrollContainer.scrollLeft += e.deltaY * 0.8;
+      }
+    }, { passive: false });
+
+    let isDown = false;
+    let startX = 0, scrollStart = 0;
+    filterChipsScrollContainer.addEventListener('mousedown', (e) => {
+      isDown = true;
+      startX = e.pageX - filterChipsScrollContainer.offsetLeft;
+      scrollStart = filterChipsScrollContainer.scrollLeft;
+    });
+    filterChipsScrollContainer.addEventListener('mouseleave', () => { isDown = false; });
+    filterChipsScrollContainer.addEventListener('mouseup', () => { isDown = false; });
+    filterChipsScrollContainer.addEventListener('mousemove', (e) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - filterChipsScrollContainer.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      filterChipsScrollContainer.scrollLeft = scrollStart - walk;
+    });
+  }
+
   // View Toggle (Table vs Grid)
   viewToggleBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -3363,8 +3391,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.addEventListener('keydown', (e) => {
     // Skip when typing in inputs
     if (['input', 'textarea'].includes(e.target.tagName.toLowerCase())) return;
-    // Skip when login modal is open
-    if (loginModal && loginModal.classList.contains('open')) return;
+    // Skip when any modal dialog is open
+    const openModal = document.querySelector('.modal-overlay.open');
+    if (openModal) return;
 
     if (e.code === 'Space') {
       e.preventDefault();
