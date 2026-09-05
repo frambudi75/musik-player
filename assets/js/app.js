@@ -4140,11 +4140,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  if (duplicatesModal) {
-    duplicatesModal.addEventListener('click', (e) => {
-      if (e.target === duplicatesModal) duplicatesModal.classList.remove('open');
-    });
-  }
+  // Global Modal Opener Functions
+  window.openThemeModal = () => {
+    const modal = document.getElementById('theme-modal');
+    if (modal) modal.classList.add('open');
+  };
+
+  window.openDuplicatesModal = () => {
+    const modal = document.getElementById('duplicates-modal');
+    if (modal) {
+      modal.classList.add('open');
+      renderDuplicateScanner();
+    }
+  };
+
+  window.openHealthModal = () => {
+    runHealthCheck();
+  };
+
+  // Bulletproof Global Click Delegation for Modals
+  document.addEventListener('click', (e) => {
+    const themeBtn = e.target.closest('#theme-palette-btn');
+    if (themeBtn) {
+      e.preventDefault();
+      window.openThemeModal();
+      return;
+    }
+    const dupBtn = e.target.closest('#duplicate-scan-btn');
+    if (dupBtn) {
+      e.preventDefault();
+      window.openDuplicatesModal();
+      return;
+    }
+    const healthBtn = e.target.closest('#health-check-btn');
+    if (healthBtn) {
+      e.preventDefault();
+      window.openHealthModal();
+      return;
+    }
+  });
 
   // Restore Shuffle & Repeat UI state from persistent storage
   if (shuffleBtn) {

@@ -17,8 +17,8 @@
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎵</text></svg>">
   
-  <link rel="stylesheet" href="assets/css/style.css">
-  <link rel="stylesheet" href="assets/css/player.css">
+  <link rel="stylesheet" href="assets/css/style.css?v=<?= time() ?>">
+  <link rel="stylesheet" href="assets/css/player.css?v=<?= time() ?>">
 </head>
 <body>
 
@@ -159,7 +159,7 @@
                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
               </svg>
             </button>
-            <button class="icon-btn" id="theme-palette-btn" title="Ganti Tema Warna Aksen">
+            <button class="icon-btn" id="theme-palette-btn" onclick="window.openThemeModal && window.openThemeModal()" title="Ganti Tema Warna Aksen">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle>
                 <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle>
@@ -228,13 +228,13 @@
               </svg>
               <span>Scan Folder</span>
             </button>
-            <button class="btn-subtle-scan" id="health-check-btn" title="Cek & perbaiki lagu rusak" style="border-color: rgba(34, 197, 94, 0.3);">
+            <button class="btn-subtle-scan" id="health-check-btn" onclick="window.openHealthModal && window.openHealthModal()" title="Cek & perbaiki lagu rusak" style="border-color: rgba(34, 197, 94, 0.3);">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
               </svg>
               <span>Cek Kesehatan</span>
             </button>
-            <button class="btn-subtle-scan" id="duplicate-scan-btn" title="Pindai & bersihkan file lagu duplikat" style="border-color: rgba(245, 158, 11, 0.3);">
+            <button class="btn-subtle-scan" id="duplicate-scan-btn" onclick="window.openDuplicatesModal && window.openDuplicatesModal()" title="Pindai & bersihkan file lagu duplikat" style="border-color: rgba(245, 158, 11, 0.3);">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -1244,7 +1244,7 @@
     <div class="modal-card" style="max-width: 520px;">
       <div class="modal-header">
         <h3 class="modal-title">🩺 Cek Kesehatan Library Lagu</h3>
-        <button class="modal-close-btn" id="health-close-btn">&times;</button>
+        <button class="modal-close-btn" id="health-close-btn" onclick="document.getElementById('health-modal').classList.remove('open')">&times;</button>
       </div>
       <div class="modal-body" style="padding: 10px 0 0;">
         <div id="health-status-wrap" style="text-align: center; padding: 24px 0;">
@@ -1316,7 +1316,7 @@
         <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
           <span>🎨</span> Tema Warna Aksen NadaKita
         </h3>
-        <button class="modal-close-btn" id="theme-close-btn">&times;</button>
+        <button class="modal-close-btn" id="theme-close-btn" onclick="document.getElementById('theme-modal').classList.remove('open')">&times;</button>
       </div>
       <div class="modal-body" style="padding: 6px 0 0;">
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 14px;">
@@ -1361,7 +1361,7 @@
         <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
           <span>🔍</span> Pindai File Musik Duplikat
         </h3>
-        <button class="modal-close-btn" id="duplicates-close-btn">&times;</button>
+        <button class="modal-close-btn" id="duplicates-close-btn" onclick="document.getElementById('duplicates-modal').classList.remove('open')">&times;</button>
       </div>
       <div class="modal-body" style="padding: 10px 0 0;">
         <div id="dup-scanning-state" style="text-align: center; padding: 24px 0;">
@@ -1390,13 +1390,13 @@
   </div>
 
   <!-- Application Scripts -->
-  <script src="assets/js/ambient-color.js"></script>
-  <script src="assets/js/audio-core.js"></script>
-  <script src="assets/js/visualizer.js"></script>
-  <script src="assets/js/lyrics.js"></script>
-  <script src="assets/js/offline-storage.js"></script>
-  <script src="assets/js/waveform.js"></script>
-  <script src="assets/js/playlist.js"></script>
-  <script src="assets/js/app.js"></script>
+  <script src="assets/js/ambient-color.js?v=<?= time() ?>"></script>
+  <script src="assets/js/audio-core.js?v=<?= time() ?>"></script>
+  <script src="assets/js/visualizer.js?v=<?= time() ?>"></script>
+  <script src="assets/js/lyrics.js?v=<?= time() ?>"></script>
+  <script src="assets/js/offline-storage.js?v=<?= time() ?>"></script>
+  <script src="assets/js/waveform.js?v=<?= time() ?>"></script>
+  <script src="assets/js/playlist.js?v=<?= time() ?>"></script>
+  <script src="assets/js/app.js?v=<?= time() ?>"></script>
 </body>
 </html>
