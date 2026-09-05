@@ -14,23 +14,61 @@ $raw = file_get_contents('php://input');
 $body = json_decode($raw, true);
 
 if (!$body || empty($body['id'])) {
-    echo json_encode(['status' => 'error', 'message' => 'ID lagu wajib disertakan']);
+    echo json_encode(['status' => 'error', 'message' => 'ID lagu wajib disertakan'], JSON_UNESCAPED_SLASHES);
     exit;
 }
 
-$trackId = $body['id'];
+$trackId = trim($body['id']);
 $songsDir = realpath(__DIR__ . '/../songs');
-$cacheFile = __DIR__ . '/../songs/.cache_library.json';
+if (!$songsDir) {
+    $songsDir = __DIR__ . '/../songs';
+    @mkdir($songsDir, 0777, true);
+    $songsDir = realpath($songsDir);
+}
+$cacheFile = $songsDir . DIRECTORY_SEPARATOR . '.cache_library.json';
 
-if (!file_exists($cacheFile)) {
-    echo json_encode(['status' => 'error', 'message' => 'Library database belum tersedia']);
-    exit;
+// 1. Retrieve or rebuild cache
+$cacheData = null;
+if (file_exists($cacheFile)) {
+    $cacheData = json_decode(@file_get_contents($cacheFile), true);
+}
+if (!$cacheData || !isset($cacheData['songs']) || empty($cacheData['songs'])) {
+    $cacheData = AuraCache::get('library_scan');
 }
 
-$cacheData = json_decode(file_get_contents($cacheFile), true);
-if (!$cacheData || !isset($cacheData['songs'])) {
-    echo json_encode(['status' => 'error', 'message' => 'Gagal membaca library']);
-    exit;
+// Fallback: If cache is completely missing, perform quick directory scan
+if (!$cacheData || !isset($cacheData['songs']) || empty($cacheData['songs'])) {
+    $allowedExtensions = ['mp3', 'flac', 'wav', 'ogg', 'm4a', 'aac', 'opus'];
+    $scannedSongs = [];
+    try {
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($songsDir, RecursiveDirectoryIterator::SKIP_DOTS)
+        );
+        foreach ($iterator as $file) {
+            if ($file->isDir()) continue;
+            $rPath = $file->getRealPath();
+            if (!$rPath) continue;
+            if (strpos($rPath, DIRECTORY_SEPARATOR . 'covers') !== false || strpos($rPath, DIRECTORY_SEPARATOR . '.covers') !== false || strpos($file->getFilename(), '.') === 0) {
+                continue;
+            }
+            $ext = strtolower($file->getExtension());
+            if (in_array($ext, $allowedExtensions)) {
+                $relPath = str_replace('\\', '/', substr($rPath, strlen($songsDir) + 1));
+                $encodedRelPath = implode('/', array_map('rawurlencode', explode('/', $relPath)));
+                $scannedSongs[] = [
+                    'id' => 'track_' . md5($relPath),
+                    'title' => pathinfo($file->getFilename(), PATHINFO_FILENAME),
+                    'artist' => 'Unknown Artist',
+                    'album' => 'Single',
+                    'url' => 'songs/' . $encodedRelPath,
+                    'filename' => $file->getFilename(),
+                    'size' => @filesize($rPath),
+                    'modified' => @filemtime($rPath)
+                ];
+            }
+        }
+    } catch (Exception $e) {}
+    $cacheData = ['timestamp' => time(), 'songs' => $scannedSongs];
 }
 
 $songToDelete = null;
@@ -44,37 +82,72 @@ foreach ($cacheData['songs'] as $s) {
     }
 }
 
-if (!$songToDelete) {
-    echo json_encode(['status' => 'error', 'message' => 'Lagu tidak ditemukan di library']);
-    exit;
-}
+// Locate file physically
+$targetRealPath = null;
 
-// Safely delete actual audio file on disk
-$filePath = $songToDelete['file_path'] ?? '';
-if (!empty($filePath)) {
-    $realPath = realpath($filePath);
-    if ($realPath && strpos($realPath, $songsDir) === 0 && file_exists($realPath)) {
-        @unlink($realPath);
+if ($songToDelete) {
+    if (!empty($songToDelete['url'])) {
+        $cleanUrl = rawurldecode($songToDelete['url']);
+        if (strpos($cleanUrl, 'songs/') === 0) {
+            $cleanUrl = substr($cleanUrl, 6);
+        }
+        $candidate = realpath($songsDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $cleanUrl));
+        if ($candidate && file_exists($candidate)) {
+            $targetRealPath = $candidate;
+        }
+    }
+
+    if (!$targetRealPath && !empty($songToDelete['filename'])) {
+        $candidate = realpath($songsDir . DIRECTORY_SEPARATOR . $songToDelete['filename']);
+        if ($candidate && file_exists($candidate)) {
+            $targetRealPath = $candidate;
+        }
     }
 }
 
-// Delete matching .lrc file if exists
-$lrcPath = $songToDelete['lrc_path'] ?? '';
-if (!empty($lrcPath)) {
-    $realLrc = realpath($lrcPath);
-    if ($realLrc && strpos($realLrc, $songsDir) === 0 && file_exists($realLrc)) {
-        @unlink($realLrc);
+// Fallback search across directory by ID hash if not located yet
+if (!$targetRealPath) {
+    try {
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($songsDir, RecursiveDirectoryIterator::SKIP_DOTS)
+        );
+        foreach ($iterator as $file) {
+            if ($file->isDir()) continue;
+            $rPath = $file->getRealPath();
+            if (!$rPath) continue;
+            $relPath = str_replace('\\', '/', substr($rPath, strlen($songsDir) + 1));
+            if ('track_' . md5($relPath) === $trackId) {
+                $targetRealPath = $rPath;
+                break;
+            }
+        }
+    } catch (Exception $e) {}
+}
+
+// Perform safe file deletion
+if ($targetRealPath && file_exists($targetRealPath)) {
+    if (strpos($targetRealPath, $songsDir) === 0) {
+        @unlink($targetRealPath);
+
+        // Also delete associated .lrc file if present
+        $dir = dirname($targetRealPath);
+        $fnWithoutExt = pathinfo($targetRealPath, PATHINFO_FILENAME);
+        $lrcCandidate = $dir . DIRECTORY_SEPARATOR . $fnWithoutExt . '.lrc';
+        if (file_exists($lrcCandidate)) {
+            @unlink($lrcCandidate);
+        }
     }
 }
 
 // Update cache file and memory cache
 $cacheData['songs'] = $newSongList;
 $cacheData['timestamp'] = time();
-file_put_contents($cacheFile, json_encode($cacheData, JSON_UNESCAPED_SLASHES));
+@file_put_contents($cacheFile, json_encode($cacheData, JSON_UNESCAPED_SLASHES));
 AuraCache::set('library_scan', $cacheData, 3600);
 
 echo json_encode([
     'status' => 'success',
-    'message' => 'Lagu berhasil dihapus dari koleksi server',
+    'message' => 'Lagu berhasil dihapus dari server',
     'deleted_id' => $trackId
 ], JSON_UNESCAPED_SLASHES);
+

@@ -4016,29 +4016,97 @@ document.addEventListener('DOMContentLoaded', async () => {
   const dupGroupsContainer = document.getElementById('dup-groups-container');
   const dupEmptyMsg = document.getElementById('dup-empty-msg');
 
+  function cleanSongNoise(str) {
+    if (!str) return '';
+    let s = str.toLowerCase();
+    s = s.replace(/\.(mp3|flac|wav|ogg|m4a|aac|opus)$/i, '');
+    s = s.replace(/[｜|]/g, ' - ');
+    s = s.replace(/\((official\s*(music|lyric|audio|video|hd|4k|mv)?\s*(video|audio|clip)?|lyrics?|lirik|audio|mv|hd|4k|visualizer|remastered|full\s*(version|audio|song)?|live[^)]*|jadul[^)]*|viral[^)]*|cover(ed)?\s*by[^)]*|cover\b[^)]*)\)/gi, '');
+    s = s.replace(/\[(official\s*(music|lyric|audio|video|hd|4k|mv)?\s*(video|audio|clip)?|lyrics?|lirik|audio|mv|hd|4k|visualizer|remastered|full\s*(version|audio|song)?|live[^\]]*|jadul[^\]]*|viral[^\]]*|cover(ed)?\s*by[^\]]*|cover\b[^\]]*)\]/gi, '');
+    s = s.replace(/\b(official\s*(music|lyric|audio|video)?\s*(video|audio|clip)?|lyric\s*video|music\s*video|320kbps|128kbps|256kbps)\b/gi, '');
+    return s.trim();
+  }
+
+  function parseSongIdentity(song) {
+    const fClean = cleanSongNoise(song.filename || '');
+    const tClean = cleanSongNoise(song.title || '');
+    const rawArtist = cleanSongNoise(song.artist || '').replace(/[^a-z0-9]/g, '');
+
+    let titlePart = tClean;
+    let artistPart = rawArtist;
+
+    if (fClean.includes(' - ')) {
+      const parts = fClean.split(' - ').map(p => p.trim()).filter(Boolean);
+      if (parts.length >= 2) {
+        const p0Clean = parts[0].replace(/[^a-z0-9]/g, '');
+        const p1Clean = parts[1].replace(/[^a-z0-9]/g, '');
+
+        if (rawArtist && (rawArtist.includes(p0Clean) || p0Clean.includes(rawArtist))) {
+          artistPart = p0Clean;
+          titlePart = parts.slice(1).join(' ');
+        } else if (rawArtist && (rawArtist.includes(p1Clean) || p1Clean.includes(rawArtist))) {
+          artistPart = p1Clean;
+          titlePart = parts[0];
+        } else {
+          artistPart = p0Clean;
+          titlePart = parts.slice(1).join(' ');
+        }
+      }
+    }
+
+    const pureTitle = cleanSongNoise(titlePart).replace(/[^a-z0-9]/g, '');
+    const pureArtist = artistPart.replace(/[^a-z0-9]/g, '');
+
+    return {
+      pureTitle: pureTitle.length > 2 ? pureTitle : cleanSongNoise(song.title || song.filename || '').replace(/[^a-z0-9]/g, ''),
+      pureArtist,
+      size: song.size || 0
+    };
+  }
+
+  function areTracksDuplicate(a, b) {
+    if (a.id === b.id) return false;
+    // Identical exact file size > 100KB is 100% duplicate
+    if (a.size && b.size && a.size > 100000 && a.size === b.size) return true;
+
+    const infoA = parseSongIdentity(a);
+    const infoB = parseSongIdentity(b);
+
+    if (!infoA.pureTitle || !infoB.pureTitle || infoA.pureTitle.length < 3 || infoB.pureTitle.length < 3) return false;
+
+    // Direct title identity match
+    if (infoA.pureTitle === infoB.pureTitle) {
+      if (!infoA.pureArtist || !infoB.pureArtist || infoA.pureArtist === infoB.pureArtist || infoA.pureArtist.includes(infoB.pureArtist) || infoB.pureArtist.includes(infoA.pureArtist)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   function findDuplicateTracks() {
+    if (!window.PlaylistManager || !window.PlaylistManager.library) return [];
     const library = window.PlaylistManager.library;
-    const groups = new Map();
+    const groups = [];
+    const visited = new Set();
 
-    library.forEach((song) => {
-      const cleanTitle = (song.title || '').toLowerCase().replace(/[\(\[\{].*?[\)\]\}]/g, '').replace(/[^a-z0-9]/g, '');
-      const cleanArtist = (song.artist || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-      const key = `${cleanTitle}__${cleanArtist}`;
-
-      if (cleanTitle.length > 2) {
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key).push(song);
+    for (let i = 0; i < library.length; i++) {
+      if (visited.has(i)) continue;
+      const currentGroup = [library[i]];
+      for (let j = i + 1; j < library.length; j++) {
+        if (visited.has(j)) continue;
+        if (areTracksDuplicate(library[i], library[j])) {
+          visited.add(j);
+          currentGroup.push(library[j]);
+        }
       }
-    });
-
-    const duplicates = [];
-    groups.forEach((songs) => {
-      if (songs.length > 1) {
-        duplicates.push(songs);
+      if (currentGroup.length > 1) {
+        visited.add(i);
+        groups.push(currentGroup);
       }
-    });
+    }
 
-    return duplicates;
+    return groups;
   }
 
   function renderDuplicateScanner() {
@@ -4050,6 +4118,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       const dupGroups = findDuplicateTracks();
       dupScanningState.style.display = 'none';
       dupResultsWrap.style.display = 'block';
+
+      function updateDuplicateSummary() {
+        const remainingCards = dupGroupsContainer.querySelectorAll('.duplicate-group-card');
+        if (remainingCards.length === 0) {
+          dupSummaryText.textContent = 'Tidak ditemukan lagu duplikat';
+          dupEmptyMsg.style.display = 'block';
+        } else {
+          dupEmptyMsg.style.display = 'none';
+          dupSummaryText.textContent = `Ditemukan ${remainingCards.length} grup lagu duplikat`;
+        }
+      }
 
       if (dupGroups.length === 0) {
         dupSummaryText.textContent = 'Tidak ditemukan lagu duplikat';
@@ -4073,20 +4152,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         card.innerHTML = `
           <div class="duplicate-group-header">
             <div class="duplicate-group-title">${escapeHTML(gTitle)} <span style="color: var(--text-tertiary); font-weight: 500;">(${escapeHTML(gArtist)})</span></div>
-            <span class="duplicate-group-badge">${group.length} File Ganda</span>
+            <span class="duplicate-group-badge" id="dup-badge-${gIdx}">${group.length} File Ganda</span>
           </div>
-          <div style="display: flex; flex-direction: column; gap: 6px;">
+          <div class="duplicate-songs-list" style="display: flex; flex-direction: column; gap: 6px;">
             ${group.map((s) => `
               <div class="duplicate-song-row" id="dup-row-${escapeHTML(s.id)}">
                 <div class="duplicate-song-meta">
                   <div class="duplicate-song-name">${escapeHTML(s.filename || s.title)}</div>
-                  <div class="duplicate-song-specs">${formatTime(s.duration || 0)} • ${s.filesize ? (s.filesize / (1024*1024)).toFixed(2) + ' MB' : 'Lokal'} • ${s.bitrate || 320}kbps</div>
+                  <div class="duplicate-song-specs">${formatTime(s.duration || 0)} • ${s.size ? (s.size / (1024*1024)).toFixed(2) + ' MB' : (s.filesize ? (s.filesize / (1024*1024)).toFixed(2) + ' MB' : 'Lokal')} • ${s.bitrate || 320}kbps</div>
                 </div>
                 <div style="display: flex; gap: 6px; align-items: center;">
-                  <button class="btn-subtle-scan" style="padding: 4px 8px; font-size: 0.75rem;" onclick="window.PlaylistManager.playTrack(window.PlaylistManager.getSongById('${escapeHTML(s.id)}'))">
+                  <button class="btn-subtle-scan" style="padding: 4px 8px; font-size: 0.75rem;" onclick="window.PlaylistManager && window.PlaylistManager.playTrack(window.PlaylistManager.getSongById('${escapeHTML(s.id)}'))">
                     ▶ Tes Putar
                   </button>
-                  <button class="btn-dup-delete" data-del-id="${escapeHTML(s.id)}">
+                  <button class="btn-dup-delete" data-del-id="${escapeHTML(s.id)}" data-group-idx="${gIdx}">
                     🗑️ Hapus
                   </button>
                 </div>
@@ -4098,7 +4177,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         card.querySelectorAll('.btn-dup-delete').forEach((btn) => {
           btn.addEventListener('click', async () => {
             const songId = btn.dataset.delId;
+            const grpIdx = btn.dataset.groupIdx;
             if (!confirm('Hapus file lagu duplikat ini dari penyimpanan server?')) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Menghapus...';
+
             try {
               const res = await fetch('api/delete.php', {
                 method: 'POST',
@@ -4110,11 +4194,41 @@ document.addEventListener('DOMContentLoaded', async () => {
                 showToast('File duplikat berhasil dihapus', '🗑️');
                 const row = document.getElementById(`dup-row-${songId}`);
                 if (row) row.remove();
-                await fetchLibrary(true);
+
+                // Remove from client library
+                if (window.PlaylistManager && Array.isArray(window.PlaylistManager.library)) {
+                  window.PlaylistManager.library = window.PlaylistManager.library.filter(s => s.id !== songId);
+                }
+
+                // Update current card rows
+                const remainingRows = card.querySelectorAll('.duplicate-song-row');
+                const badge = document.getElementById(`dup-badge-${grpIdx}`);
+                if (badge) badge.textContent = `${remainingRows.length} File Ganda`;
+
+                if (remainingRows.length <= 1) {
+                  card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                  card.style.opacity = '0';
+                  card.style.transform = 'scale(0.95)';
+                  setTimeout(() => {
+                    card.remove();
+                    updateDuplicateSummary();
+                  }, 300);
+                } else {
+                  updateDuplicateSummary();
+                }
+
+                // Sync library & UI in background
+                if (typeof fetchLibrary === 'function') {
+                  fetchLibrary(true);
+                }
               } else {
+                btn.disabled = false;
+                btn.innerHTML = '🗑️ Hapus';
                 showToast(data.message || 'Gagal menghapus file', '⚠️');
               }
             } catch (err) {
+              btn.disabled = false;
+              btn.innerHTML = '🗑️ Hapus';
               showToast('Kesalahan koneksi saat menghapus file', '⚠️');
             }
           });
