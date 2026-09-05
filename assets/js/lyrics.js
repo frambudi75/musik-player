@@ -11,6 +11,7 @@ class LyricsEngine {
     this.immersiveContainerEl = null;
     this.isAutoScrollEnabled = true;
     this.userScrollTimeout = null;
+    this.onActiveLineChange = null;
   }
 
   setContainers(mainContainer, immersiveContainer) {
@@ -164,6 +165,9 @@ class LyricsEngine {
 
     renderTo(this.containerEl, false);
     renderTo(this.immersiveContainerEl, true);
+    if (this.lyrics.length === 0 && this.onActiveLineChange) {
+      this.onActiveLineChange('');
+    }
   }
 
   /**
@@ -189,6 +193,11 @@ class LyricsEngine {
   }
 
   highlightActiveLine(index) {
+    const activeText = this.lyrics[index]?.text || '';
+    if (this.onActiveLineChange) {
+      this.onActiveLineChange(activeText, index);
+    }
+
     const applyHighlight = (container) => {
       if (!container) return;
       const allLines = container.querySelectorAll('.lyric-line');

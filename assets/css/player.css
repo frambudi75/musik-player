@@ -777,3 +777,64 @@
   color: var(--text-primary);
   border-color: var(--accent-primary);
 }
+
+/* ==========================================================================
+   MINI FLOATING SYNCHRONIZED LYRICS TICKER
+   ========================================================================== */
+.player-mini-lyrics {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 480px;
+  width: 90%;
+  padding: 2px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  animation: fadeInLyric 0.3s ease;
+  user-select: none;
+}
+
+.player-mini-lyrics:hover {
+  background: var(--accent-subtle);
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
+}
+
+.mini-lyrics-icon {
+  font-size: 0.72rem;
+  color: var(--accent-primary);
+  flex-shrink: 0;
+  animation: pulseIcon 2s infinite ease-in-out;
+}
+
+.mini-lyrics-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  flex: 1;
+  letter-spacing: 0.01em;
+}
+
+@keyframes pulseIcon {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 1; }
+}
+
+@keyframes fadeInLyric {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .player-mini-lyrics {
+    display: none !important;
+  }
+}
+

@@ -2768,6 +2768,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     editSongTitleInput.focus();
   }
 
+  let selectedEnrichCoverUrl = '';
+
   if (autoEnrichBtn) {
     autoEnrichBtn.addEventListener('click', async () => {
       const title = editSongTitleInput.value.trim();
@@ -2785,30 +2787,29 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       try {
-        const res = await fetch('api/enrich_metadata.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, artist })
-        });
+        const res = await fetch(`api/enrich_metadata.php?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`);
         const data = await res.json();
-        if (data.status === 'success' && data.results && data.results.length > 0) {
+        const matches = (data.status === 'success') ? (data.data || data.results || []) : [];
+        if (matches.length > 0) {
           enrichResultsWrap.innerHTML = '';
-          data.results.forEach((match) => {
+          matches.forEach((match) => {
             const card = document.createElement('div');
             card.className = 'enrich-item-card';
+            const cArt = match.cover_url || match.cover_hd || match.cover || DEFAULT_COVER;
             card.innerHTML = `
-              <img src="${escapeHTML(match.cover_hd || match.cover)}" alt="Art" />
-              <div class="enrich-item-info">
-                <span class="enrich-item-title">${escapeHTML(match.title)}</span>
-                <span class="enrich-item-meta">${escapeHTML(match.artist)} • ${escapeHTML(match.album || '')} (${match.year || ''})</span>
+              <img src="${escapeHTML(cArt)}" class="enrich-item-thumb" alt="Art" onerror="this.src='${DEFAULT_COVER}'" />
+              <div style="flex: 1; min-width: 0;">
+                <div class="enrich-item-title">${escapeHTML(match.title)}</div>
+                <div class="enrich-item-subtitle">${escapeHTML(match.artist)} • ${escapeHTML(match.album || 'Single')} (${match.year || ''})</div>
               </div>
-              <button class="enrich-apply-btn">Pilih</button>
+              <button class="btn-subtle-scan" style="padding: 4px 10px; font-size: 0.75rem; flex-shrink: 0;">Pilih</button>
             `;
-            card.querySelector('.enrich-apply-btn').addEventListener('click', () => {
-              editSongTitleInput.value = match.title;
-              editSongArtistInput.value = match.artist;
+            card.addEventListener('click', () => {
+              editSongTitleInput.value = match.title || title;
+              editSongArtistInput.value = match.artist || artist;
               if (match.album) editSongAlbumInput.value = match.album;
               if (match.genre) editSongGenreInput.value = match.genre;
+              selectedEnrichCoverUrl = match.cover_url || match.cover_hd || '';
               showToast('Data & Cover HD dipilih! Klik Simpan Perubahan', '✨');
               enrichResultsWrap.style.display = 'none';
             });
@@ -2830,6 +2831,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (editMetadataCloseBtn) {
     editMetadataCloseBtn.addEventListener('click', () => {
       editMetadataModal.classList.remove('open');
+      selectedEnrichCoverUrl = '';
     });
   }
 
@@ -2858,7 +2860,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             title: title,
             artist: artist,
             album: album,
-            genre: genre
+            genre: genre,
+            cover_url: selectedEnrichCoverUrl
           })
         });
 
@@ -2866,6 +2869,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (data.status === 'success' && data.song) {
           showToast(data.message || 'Metadata berhasil diperbarui!', '✓');
           editMetadataModal.classList.remove('open');
+          selectedEnrichCoverUrl = '';
 
           // Update in-memory song in PlaylistManager
           const songIdx = window.PlaylistManager.library.findIndex((s) => s.id === id);
@@ -3689,8 +3693,467 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   window.addEventListener('appinstalled', () => {
     if (pwaInstallBtn) pwaInstallBtn.style.display = 'none';
-    showToast('Aura Music siap digunakan sebagai aplikasi!', '✨');
+    showToast('NadaKita siap digunakan sebagai aplikasi!', '✨');
   });
+
+  // ==========================================
+  // MINI FLOATING SYNCHRONIZED LYRICS TICKER
+  // ==========================================
+  const playerMiniLyrics = document.getElementById('player-mini-lyrics');
+  const miniLyricsText = document.getElementById('mini-lyrics-text');
+
+  if (window.LyricsEngine) {
+    window.LyricsEngine.onActiveLineChange = (lineText) => {
+      if (!playerMiniLyrics || !miniLyricsText) return;
+      if (lineText && lineText.trim()) {
+        miniLyricsText.textContent = lineText.trim();
+        playerMiniLyrics.style.display = 'flex';
+      } else {
+        playerMiniLyrics.style.display = 'none';
+      }
+    };
+  }
+
+  if (playerMiniLyrics) {
+    playerMiniLyrics.addEventListener('click', () => {
+      if (rightPanel) {
+        rightPanel.classList.add('open');
+        panelTabBtns.forEach((b) => b.classList.toggle('active', b.dataset.tab === 'lyrics'));
+        if (lyricsView) lyricsView.style.display = 'block';
+        if (visualizerView) visualizerView.style.display = 'none';
+        if (queueView) queueView.style.display = 'none';
+      }
+    });
+  }
+
+  // ==========================================
+  // THEME ACCENT COLOR PALETTE CONTROLLER
+  // ==========================================
+  const themeModal = document.getElementById('theme-modal');
+  const themePaletteBtn = document.getElementById('theme-palette-btn');
+  const themeCloseBtn = document.getElementById('theme-close-btn');
+  const themePresetCards = document.querySelectorAll('.theme-preset-card');
+
+  function applyTheme(themeName) {
+    document.documentElement.setAttribute('data-theme', themeName);
+    try {
+      localStorage.setItem('nadakita_theme', themeName);
+    } catch (e) {}
+    themePresetCards.forEach((card) => {
+      card.classList.toggle('active', card.dataset.themeVal === themeName);
+    });
+  }
+
+  // Restore saved theme on startup
+  const savedTheme = localStorage.getItem('nadakita_theme') || 'blue';
+  applyTheme(savedTheme);
+
+  if (themePaletteBtn) {
+    themePaletteBtn.addEventListener('click', () => {
+      if (themeModal) themeModal.classList.add('open');
+    });
+  }
+  if (themeCloseBtn) {
+    themeCloseBtn.addEventListener('click', () => {
+      if (themeModal) themeModal.classList.remove('open');
+    });
+  }
+  if (themeModal) {
+    themeModal.addEventListener('click', (e) => {
+      if (e.target === themeModal) themeModal.classList.remove('open');
+    });
+  }
+
+  themePresetCards.forEach((card) => {
+    card.addEventListener('click', () => {
+      const themeVal = card.dataset.themeVal;
+      applyTheme(themeVal);
+      const name = card.querySelector('.theme-preset-name')?.textContent || themeVal;
+      showToast(`Tema warna diubah ke "${name}"`, '🎨');
+    });
+  });
+
+  // ==========================================
+  // NADAKITA WRAPPED HTML5 CANVAS EXPORTER
+  // ==========================================
+  const exportWrappedBtn = document.getElementById('export-wrapped-btn');
+
+  async function exportNadaKitaWrappedCard() {
+    showToast('Menyiapkan gambar Wrapped...', '🎨');
+    const summary = window.PlaylistManager.getStatsSummary();
+    
+    // Canvas dimensions: 1080x1920 (9:16 Story format for Instagram/WhatsApp)
+    const canvas = document.createElement('canvas');
+    canvas.width = 1080;
+    canvas.height = 1920;
+    const ctx = canvas.getContext('2d');
+
+    // 1. Dark Background with Vibrant Mesh Gradients
+    const bgGrad = ctx.createLinearGradient(0, 0, 1080, 1920);
+    bgGrad.addColorStop(0, '#0a0d14');
+    bgGrad.addColorStop(0.4, '#0f1422');
+    bgGrad.addColorStop(1, '#05070a');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, 1080, 1920);
+
+    // Accent Orbs
+    const currentTheme = localStorage.getItem('nadakita_theme') || 'blue';
+    let accent1 = '#3b82f6', accent2 = '#8b5cf6';
+    if (currentTheme === 'purple') { accent1 = '#a855f7'; accent2 = '#ec4899'; }
+    else if (currentTheme === 'emerald') { accent1 = '#10b981'; accent2 = '#06b6d4'; }
+    else if (currentTheme === 'amber') { accent1 = '#f59e0b'; accent2 = '#ef4444'; }
+    else if (currentTheme === 'pink') { accent1 = '#ec4899'; accent2 = '#a855f7'; }
+
+    // Top Radial Orb
+    const orb1 = ctx.createRadialGradient(250, 250, 50, 250, 250, 600);
+    orb1.addColorStop(0, accent1 + '55');
+    orb1.addColorStop(1, 'transparent');
+    ctx.fillStyle = orb1;
+    ctx.fillRect(0, 0, 1080, 1000);
+
+    // Bottom Radial Orb
+    const orb2 = ctx.createRadialGradient(850, 1600, 50, 850, 1600, 700);
+    orb2.addColorStop(0, accent2 + '44');
+    orb2.addColorStop(1, 'transparent');
+    ctx.fillStyle = orb2;
+    ctx.fillRect(0, 1000, 1080, 920);
+
+    // Helper: Rounded Rect
+    function roundRect(x, y, w, h, r, fill, stroke) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.stroke(); }
+    }
+
+    // 2. Header Brand & Title
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 52px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText('NADAKITA', 80, 140);
+
+    ctx.fillStyle = accent1;
+    ctx.font = '700 26px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText('AUDIO WRAPPED • 2026', 80, 185);
+
+    // Persona Capsule
+    roundRect(80, 230, 480, 64, 32, 'rgba(255,255,255,0.08)', 'rgba(255,255,255,0.15)');
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '600 28px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText(summary.persona || '🎧 Penikmat Musik Aktif', 110, 272);
+
+    // 3. Spotlight #1 Favorite Song Card
+    roundRect(80, 330, 920, 360, 28, 'rgba(255,255,255,0.05)', 'rgba(255,255,255,0.12)');
+
+    ctx.fillStyle = accent1;
+    ctx.font = '800 24px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText('🏆 LAGU PALING SERING DIPUTAR', 120, 385);
+
+    const fav = summary.favoriteSong;
+    const favTitle = fav?.song?.title || 'Belum ada lagu';
+    const favArtist = fav?.song?.artist || 'NadaKita Player';
+    const favCount = fav?.count ? `${fav.count}x Diputar` : '0x Diputar';
+
+    // Draw Album Cover on Canvas
+    let coverLoaded = false;
+    const coverUrl = fav?.song ? getSafeCoverUrl(fav.song) : DEFAULT_COVER;
+    if (coverUrl && !coverUrl.endsWith('.svg')) {
+      try {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        await new Promise((resolve) => {
+          img.onload = () => {
+            ctx.save();
+            ctx.beginPath();
+            if (ctx.roundRect) {
+              ctx.roundRect(120, 420, 220, 220, 20);
+            } else {
+              ctx.rect(120, 420, 220, 220);
+            }
+            ctx.clip();
+            ctx.drawImage(img, 120, 420, 220, 220);
+            ctx.restore();
+            coverLoaded = true;
+            resolve();
+          };
+          img.onerror = () => resolve();
+          img.src = coverUrl;
+        });
+      } catch (e) {}
+    }
+
+    if (!coverLoaded) {
+      roundRect(120, 420, 220, 220, 20, 'rgba(59,130,246,0.2)', 'rgba(59,130,246,0.4)');
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '80px sans-serif';
+      ctx.fillText('🎵', 180, 560);
+    }
+
+    // Song Title & Artist text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 40px "Plus Jakarta Sans", sans-serif';
+    const truncatedTitle = favTitle.length > 22 ? favTitle.substring(0, 20) + '...' : favTitle;
+    ctx.fillText(truncatedTitle, 370, 490);
+
+    ctx.fillStyle = '#9ca3af';
+    ctx.font = '600 30px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText(favArtist, 370, 545);
+
+    // Play count pill
+    roundRect(370, 580, 220, 48, 24, accent1 + '33', accent1);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 24px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText(`🔥 ${favCount}`, 395, 613);
+
+    // 4. 3 KPI Metric Cards
+    const kpis = [
+      { num: summary.formattedTime || '0 Menit', label: 'Waktu Dengar', icon: '⏱️' },
+      { num: `${summary.totalPlays || 0}`, label: 'Total Diputar', icon: '▶️' },
+      { num: `${summary.topArtists?.length || 0}`, label: 'Musisi Unik', icon: '🎤' }
+    ];
+
+    kpis.forEach((kpi, idx) => {
+      const x = 80 + idx * 320;
+      roundRect(x, 730, 280, 190, 20, 'rgba(255,255,255,0.05)', 'rgba(255,255,255,0.1)');
+      ctx.font = '36px sans-serif';
+      ctx.fillText(kpi.icon, x + 24, 785);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '800 38px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText(kpi.num, x + 24, 845);
+
+      ctx.fillStyle = '#9ca3af';
+      ctx.font = '600 22px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText(kpi.label, x + 24, 885);
+    });
+
+    // 5. Top 5 Tracks Leaderboard
+    roundRect(80, 960, 920, 540, 24, 'rgba(255,255,255,0.04)', 'rgba(255,255,255,0.08)');
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 32px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText('🔥 TOP 5 LAGU FAVORIT', 120, 1025);
+
+    const top5 = (summary.topTracks || []).slice(0, 5);
+    const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+
+    top5.forEach((item, idx) => {
+      const y = 1080 + idx * 80;
+      ctx.font = '30px sans-serif';
+      ctx.fillText(medals[idx] || `${idx + 1}`, 120, y + 10);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 28px "Plus Jakarta Sans", sans-serif';
+      const tText = item.song?.title || 'Unknown';
+      ctx.fillText(tText.length > 28 ? tText.substring(0, 26) + '...' : tText, 185, y);
+
+      ctx.fillStyle = '#9ca3af';
+      ctx.font = '500 22px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText(item.song?.artist || 'Unknown', 185, y + 30);
+
+      ctx.fillStyle = accent1;
+      ctx.font = '700 24px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText(`${item.count}x`, 910, y + 15);
+    });
+
+    // 6. Top Artists Row
+    roundRect(80, 1540, 920, 220, 24, 'rgba(255,255,255,0.04)', 'rgba(255,255,255,0.08)');
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 30px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText('⭐ TOP ARTIS FAVORIT', 120, 1600);
+
+    const topArt = (summary.topArtists || []).slice(0, 4);
+    topArt.forEach((art, idx) => {
+      const x = 120 + idx * 215;
+      roundRect(x, 1630, 200, 90, 14, 'rgba(255,255,255,0.06)', 'transparent');
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 24px "Plus Jakarta Sans", sans-serif';
+      const aName = art.name || 'Unknown';
+      ctx.fillText(aName.length > 12 ? aName.substring(0, 11) + '..' : aName, x + 16, 1670);
+
+      ctx.fillStyle = '#9ca3af';
+      ctx.font = '500 19px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText(`${art.count}x putar`, x + 16, 1700);
+    });
+
+    // 7. Footer Watermark
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '600 22px "Plus Jakarta Sans", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Diputar di NadaKita Studio Audio • musik.local', 540, 1840);
+    ctx.textAlign = 'left';
+
+    // Download PNG File
+    try {
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `NadaKita-Wrapped-${new Date().getFullYear()}.png`;
+      link.href = dataUrl;
+      link.click();
+      showToast('Kartu Wrapped berhasil diunduh! Siap dibagikan ke Story 📸', '🎉');
+    } catch (e) {
+      console.warn('Canvas export error:', e);
+      showToast('Gagal mengekspor kartu Wrapped', '⚠️');
+    }
+  }
+
+  if (exportWrappedBtn) {
+    exportWrappedBtn.addEventListener('click', exportNadaKitaWrappedCard);
+  }
+
+  // ==========================================
+  // DUPLICATE AUDIO FILE SCANNER
+  // ==========================================
+  const duplicatesModal = document.getElementById('duplicates-modal');
+  const duplicateScanBtn = document.getElementById('duplicate-scan-btn');
+  const duplicatesCloseBtn = document.getElementById('duplicates-close-btn');
+  const dupScanningState = document.getElementById('dup-scanning-state');
+  const dupResultsWrap = document.getElementById('dup-results-wrap');
+  const dupSummaryText = document.getElementById('dup-summary-text');
+  const dupGroupsContainer = document.getElementById('dup-groups-container');
+  const dupEmptyMsg = document.getElementById('dup-empty-msg');
+
+  function findDuplicateTracks() {
+    const library = window.PlaylistManager.library;
+    const groups = new Map();
+
+    library.forEach((song) => {
+      const cleanTitle = (song.title || '').toLowerCase().replace(/[\(\[\{].*?[\)\]\}]/g, '').replace(/[^a-z0-9]/g, '');
+      const cleanArtist = (song.artist || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const key = `${cleanTitle}__${cleanArtist}`;
+
+      if (cleanTitle.length > 2) {
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(song);
+      }
+    });
+
+    const duplicates = [];
+    groups.forEach((songs) => {
+      if (songs.length > 1) {
+        duplicates.push(songs);
+      }
+    });
+
+    return duplicates;
+  }
+
+  function renderDuplicateScanner() {
+    if (!dupResultsWrap || !dupScanningState) return;
+    dupScanningState.style.display = 'block';
+    dupResultsWrap.style.display = 'none';
+
+    setTimeout(() => {
+      const dupGroups = findDuplicateTracks();
+      dupScanningState.style.display = 'none';
+      dupResultsWrap.style.display = 'block';
+
+      if (dupGroups.length === 0) {
+        dupSummaryText.textContent = 'Tidak ditemukan lagu duplikat';
+        dupGroupsContainer.innerHTML = '';
+        dupEmptyMsg.style.display = 'block';
+        return;
+      }
+
+      dupEmptyMsg.style.display = 'none';
+      dupSummaryText.textContent = `Ditemukan ${dupGroups.length} grup lagu duplikat`;
+      dupGroupsContainer.innerHTML = '';
+
+      dupGroups.forEach((group, gIdx) => {
+        const card = document.createElement('div');
+        card.className = 'duplicate-group-card';
+        card.id = `dup-group-${gIdx}`;
+
+        const gTitle = group[0].title;
+        const gArtist = group[0].artist || 'Unknown';
+
+        card.innerHTML = `
+          <div class="duplicate-group-header">
+            <div class="duplicate-group-title">${escapeHTML(gTitle)} <span style="color: var(--text-tertiary); font-weight: 500;">(${escapeHTML(gArtist)})</span></div>
+            <span class="duplicate-group-badge">${group.length} File Ganda</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            ${group.map((s) => `
+              <div class="duplicate-song-row" id="dup-row-${escapeHTML(s.id)}">
+                <div class="duplicate-song-meta">
+                  <div class="duplicate-song-name">${escapeHTML(s.filename || s.title)}</div>
+                  <div class="duplicate-song-specs">${formatTime(s.duration || 0)} • ${s.filesize ? (s.filesize / (1024*1024)).toFixed(2) + ' MB' : 'Lokal'} • ${s.bitrate || 320}kbps</div>
+                </div>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  <button class="btn-subtle-scan" style="padding: 4px 8px; font-size: 0.75rem;" onclick="window.PlaylistManager.playTrack(window.PlaylistManager.getSongById('${escapeHTML(s.id)}'))">
+                    ▶ Tes Putar
+                  </button>
+                  <button class="btn-dup-delete" data-del-id="${escapeHTML(s.id)}">
+                    🗑️ Hapus
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+
+        card.querySelectorAll('.btn-dup-delete').forEach((btn) => {
+          btn.addEventListener('click', async () => {
+            const songId = btn.dataset.delId;
+            if (!confirm('Hapus file lagu duplikat ini dari penyimpanan server?')) return;
+            try {
+              const res = await fetch('api/delete.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: songId })
+              });
+              const data = await res.json();
+              if (data.status === 'success') {
+                showToast('File duplikat berhasil dihapus', '🗑️');
+                const row = document.getElementById(`dup-row-${songId}`);
+                if (row) row.remove();
+                await fetchLibrary(true);
+              } else {
+                showToast(data.message || 'Gagal menghapus file', '⚠️');
+              }
+            } catch (err) {
+              showToast('Kesalahan koneksi saat menghapus file', '⚠️');
+            }
+          });
+        });
+
+        dupGroupsContainer.appendChild(card);
+      });
+    }, 400);
+  }
+
+  if (duplicateScanBtn) {
+    duplicateScanBtn.addEventListener('click', () => {
+      if (duplicatesModal) {
+        duplicatesModal.classList.add('open');
+        renderDuplicateScanner();
+      }
+    });
+  }
+
+  if (duplicatesCloseBtn) {
+    duplicatesCloseBtn.addEventListener('click', () => {
+      if (duplicatesModal) duplicatesModal.classList.remove('open');
+    });
+  }
+
+  if (duplicatesModal) {
+    duplicatesModal.addEventListener('click', (e) => {
+      if (e.target === duplicatesModal) duplicatesModal.classList.remove('open');
+    });
+  }
+
+  // Restore Shuffle & Repeat UI state from persistent storage
+  if (shuffleBtn) {
+    shuffleBtn.classList.toggle('active', window.PlaylistManager.isShuffle);
+  }
+  if (repeatBtn) {
+    repeatBtn.classList.toggle('active', window.PlaylistManager.repeatMode !== 'off');
+    repeatBtn.title = `Repeat: ${window.PlaylistManager.repeatMode.toUpperCase()}`;
+  }
 
   // Initial Data Load & Session Restore
   await fetchLibrary();

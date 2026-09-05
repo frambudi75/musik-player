@@ -159,6 +159,15 @@
                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
               </svg>
             </button>
+            <button class="icon-btn" id="theme-palette-btn" title="Ganti Tema Warna Aksen">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle>
+                <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle>
+                <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle>
+                <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle>
+                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z"></path>
+              </svg>
+            </button>
             <button class="icon-btn" id="eq-btn" title="Studio Equalizer & DSP FX">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="4" y1="21" x2="4" y2="14"></line>
@@ -223,7 +232,14 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
               </svg>
-              <span>Cek Kesehatan Lagu</span>
+              <span>Cek Kesehatan</span>
+            </button>
+            <button class="btn-subtle-scan" id="duplicate-scan-btn" title="Pindai & bersihkan file lagu duplikat" style="border-color: rgba(245, 158, 11, 0.3);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Pindai Duplikat</span>
             </button>
           </div>
           <div class="view-toggle">
@@ -307,6 +323,14 @@
                 <div class="stats-badges-row">
                   <span class="persona-chip" id="stat-persona-badge">🎧 Penikmat Musik Aktif</span>
                   <span class="persona-chip" id="stat-genre-badge">🎵 Genre: Audio</span>
+                  <button class="btn-wrapped-share" id="export-wrapped-btn" title="Unduh gambar ringkasan Wrapped untuk dibagikan ke Story Instagram / WhatsApp">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span>Unduh Wrapped Card (PNG)</span>
+                  </button>
                 </div>
               </div>
               <div class="stats-hero-spotlight" id="stats-top-spotlight">
@@ -521,6 +545,12 @@
               <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
             </svg>
           </button>
+        </div>
+
+        <!-- Mini Synced Lyrics Ticker -->
+        <div class="player-mini-lyrics" id="player-mini-lyrics" style="display: none;" title="Buka Panel Lirik">
+          <span class="mini-lyrics-icon">🎵</span>
+          <span class="mini-lyrics-text" id="mini-lyrics-text"></span>
         </div>
 
         <div class="progress-row">
@@ -1274,6 +1304,86 @@
           <div class="shortcut-item"><kbd>Q</kbd><span>Toggle Queue Panel</span></div>
           <div class="shortcut-item"><kbd>F</kbd><span>Fullscreen Mode</span></div>
           <div class="shortcut-item"><kbd>?</kbd><span>Shortcut Cheatsheet</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Theme Accent Color Palette Modal -->
+  <div class="modal-overlay" id="theme-modal">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>🎨</span> Tema Warna Aksen NadaKita
+        </h3>
+        <button class="modal-close-btn" id="theme-close-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 6px 0 0;">
+        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 14px;">
+          Pilih palet warna aksen yang Anda sukai untuk mengubah nuansa visual pemutar musik, tombol kontrol, dan efek glow secara instan:
+        </p>
+
+        <div class="theme-presets-grid" id="theme-presets-list">
+          <div class="theme-preset-card active" data-theme-val="blue">
+            <div class="theme-swatch-circle" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);"></div>
+            <span class="theme-preset-name">Electric Blue</span>
+            <span class="theme-preset-desc">Classic Studio</span>
+          </div>
+          <div class="theme-preset-card" data-theme-val="purple">
+            <div class="theme-swatch-circle" style="background: linear-gradient(135deg, #a855f7, #6b21a8);"></div>
+            <span class="theme-preset-name">Cyber Purple</span>
+            <span class="theme-preset-desc">Neon Synth</span>
+          </div>
+          <div class="theme-preset-card" data-theme-val="emerald">
+            <div class="theme-swatch-circle" style="background: linear-gradient(135deg, #10b981, #047857);"></div>
+            <span class="theme-preset-name">Emerald Neon</span>
+            <span class="theme-preset-desc">Fresh Forest</span>
+          </div>
+          <div class="theme-preset-card" data-theme-val="amber">
+            <div class="theme-swatch-circle" style="background: linear-gradient(135deg, #f59e0b, #b45309);"></div>
+            <span class="theme-preset-name">Sunset Amber</span>
+            <span class="theme-preset-desc">Warm Radiant</span>
+          </div>
+          <div class="theme-preset-card" data-theme-val="pink">
+            <div class="theme-swatch-circle" style="background: linear-gradient(135deg, #ec4899, #be185d);"></div>
+            <span class="theme-preset-name">Rose Cyber</span>
+            <span class="theme-preset-desc">Lotus Glow</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Duplicate Audio Files Scanner Modal -->
+  <div class="modal-overlay" id="duplicates-modal">
+    <div class="modal-card" style="max-width: 620px;">
+      <div class="modal-header">
+        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>🔍</span> Pindai File Musik Duplikat
+        </h3>
+        <button class="modal-close-btn" id="duplicates-close-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 10px 0 0;">
+        <div id="dup-scanning-state" style="text-align: center; padding: 24px 0;">
+          <div style="font-size: 2.2rem; margin-bottom: 8px;">🔄</div>
+          <p style="color: var(--text-secondary); font-size: 0.9rem;">Menganalisis kemiripan judul, artis, dan ukuran file...</p>
+        </div>
+
+        <div id="dup-results-wrap" style="display: none;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: var(--radius-sm); padding: 10px 14px;">
+            <div>
+              <span id="dup-summary-text" style="font-size: 0.88rem; font-weight: 700; color: var(--accent-amber);">Ditemukan 0 grup duplikat</span>
+              <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">Simpan file terbaik dan hapus versi ganda untuk menghemat ruang.</p>
+            </div>
+          </div>
+
+          <div id="dup-groups-container" style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
+            <!-- Dynamic Duplicate Groups -->
+          </div>
+
+          <div id="dup-empty-msg" style="display: none; text-align: center; padding: 20px 0; color: #10b981; font-weight: 600;">
+            ✨ Tidak ditemukan lagu duplikat di koleksi musik Anda!
+          </div>
         </div>
       </div>
     </div>

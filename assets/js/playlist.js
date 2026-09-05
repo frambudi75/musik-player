@@ -11,8 +11,9 @@ class PlaylistManager {
     this.currentIndex = -1;
     this.currentSong = null;
 
-    this.isShuffle = false;
-    this.repeatMode = 'off'; // 'off', 'all', 'one'
+    this.isShuffle = localStorage.getItem('nadakita_shuffle') === 'true';
+    this.repeatMode = localStorage.getItem('nadakita_repeat') || 'off'; // 'off', 'all', 'one'
+    this.shuffleHistory = []; // Track IDs played in current shuffle cycle
 
     this.playlists = [
       {
@@ -287,6 +288,77 @@ class PlaylistManager {
     return false;
   }
 
+  /**
+   * Smart Shuffle: Groups songs by artist, interleaves them to avoid
+   * consecutive plays from the same artist/band, and prevents immediate repeats.
+   */
+  generateSmartShuffleQueue(excludeSongId = null) {
+    if (this.currentPlaylist.length <= 1) {
+      return [...this.currentPlaylist];
+    }
+
+    // Filter available pool
+    let pool = [...this.currentPlaylist];
+    if (excludeSongId) {
+      pool = pool.filter((s) => s.id !== excludeSongId);
+    }
+
+    // Reset history if all played
+    if (this.shuffleHistory.length >= pool.length) {
+      this.shuffleHistory = [];
+    }
+
+    // Separate into unplayed and played
+    let unplayed = pool.filter((s) => !this.shuffleHistory.includes(s.id));
+    if (unplayed.length === 0) {
+      this.shuffleHistory = [];
+      unplayed = pool;
+    }
+
+    // Group songs by Artist
+    const artistGroups = {};
+    unplayed.forEach((song) => {
+      const art = (song.artist || 'Unknown').toLowerCase().trim();
+      if (!artistGroups[art]) artistGroups[art] = [];
+      artistGroups[art].push(song);
+    });
+
+    // Randomize within each group
+    Object.keys(artistGroups).forEach((art) => {
+      artistGroups[art].sort(() => Math.random() - 0.5);
+    });
+
+    // Sort artist buckets by length descending (largest artist pool first)
+    const sortedArtists = Object.keys(artistGroups).sort(
+      (a, b) => artistGroups[b].length - artistGroups[a].length
+    );
+
+    const smartQueue = [];
+    let lastArtist = this.currentSong ? (this.currentSong.artist || '').toLowerCase().trim() : '';
+
+    while (sortedArtists.some((art) => artistGroups[art].length > 0)) {
+      // Find candidate artist different from last played
+      let candidateArtist = sortedArtists.find(
+        (art) => artistGroups[art].length > 0 && art !== lastArtist
+      );
+
+      // If all remaining songs are from the same artist, pick it anyway
+      if (!candidateArtist) {
+        candidateArtist = sortedArtists.find((art) => artistGroups[art].length > 0);
+      }
+
+      if (candidateArtist && artistGroups[candidateArtist].length > 0) {
+        const pickedSong = artistGroups[candidateArtist].shift();
+        smartQueue.push(pickedSong);
+        lastArtist = candidateArtist;
+      } else {
+        break;
+      }
+    }
+
+    return smartQueue;
+  }
+
   playTrack(song, newPlaylistContext = null) {
     if (!song) return;
 
@@ -296,6 +368,10 @@ class PlaylistManager {
 
     this.currentSong = song;
     this.currentIndex = this.currentPlaylist.findIndex((s) => s.id === song.id);
+
+    if (!this.shuffleHistory.includes(song.id)) {
+      this.shuffleHistory.push(song.id);
+    }
 
     // Record Stats
     this.recordSongPlay(song);
@@ -321,7 +397,7 @@ class PlaylistManager {
       return;
     }
 
-    // Check if there is anything in queue
+    // Check if there is anything in explicit/up-next queue
     if (this.queue.length > 0) {
       const nextSong = this.queue.shift();
       this.playTrack(nextSong);
@@ -332,8 +408,13 @@ class PlaylistManager {
     if (this.currentPlaylist.length === 0) return;
 
     if (this.isShuffle) {
-      const randIdx = Math.floor(Math.random() * this.currentPlaylist.length);
-      this.playTrack(this.currentPlaylist[randIdx]);
+      const smartQueue = this.generateSmartShuffleQueue(this.currentSong?.id);
+      if (smartQueue.length > 0) {
+        this.playTrack(smartQueue[0]);
+      } else {
+        const randIdx = Math.floor(Math.random() * this.currentPlaylist.length);
+        this.playTrack(this.currentPlaylist[randIdx]);
+      }
     } else {
       let nextIdx = this.currentIndex + 1;
       if (nextIdx >= this.currentPlaylist.length) {
@@ -369,7 +450,9 @@ class PlaylistManager {
       return;
     }
 
-    if (this.currentIndex >= 0 && this.currentIndex < this.currentPlaylist.length - 1) {
+    if (this.isShuffle) {
+      this.queue = this.generateSmartShuffleQueue(this.currentSong?.id);
+    } else if (this.currentIndex >= 0 && this.currentIndex < this.currentPlaylist.length - 1) {
       this.queue = this.currentPlaylist.slice(this.currentIndex + 1);
     } else if (this.repeatMode === 'all') {
       this.queue = this.currentPlaylist.slice(0, this.currentIndex);
@@ -382,6 +465,8 @@ class PlaylistManager {
 
   toggleShuffle() {
     this.isShuffle = !this.isShuffle;
+    localStorage.setItem('nadakita_shuffle', String(this.isShuffle));
+    this.rebuildQueue();
     return this.isShuffle;
   }
 
@@ -393,6 +478,8 @@ class PlaylistManager {
     } else {
       this.repeatMode = 'off';
     }
+    localStorage.setItem('nadakita_repeat', this.repeatMode);
+    this.rebuildQueue();
     return this.repeatMode;
   }
 }
