@@ -2889,6 +2889,7 @@ html, body {
     flex-direction: column !important;
     align-items: stretch !important;
     gap: 8px !important;
+    margin-top: 4px !important;
     margin-bottom: 12px !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -2899,11 +2900,13 @@ html, body {
     display: flex !important;
     align-items: center !important;
     gap: 8px !important;
-    overflow-x: scroll !important;
+    overflow-x: auto !important;
     overflow-y: hidden !important;
     -webkit-overflow-scrolling: touch !important;
     touch-action: pan-x !important;
-    padding: 2px 2px 8px 2px !important;
+    min-height: 46px !important;
+    height: 46px !important;
+    padding: 4px 2px !important;
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
@@ -3236,6 +3239,7 @@ html, body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  margin-top: 4px;
   margin-bottom: 16px;
   width: 100%;
   max-width: 100%;
@@ -3252,7 +3256,9 @@ html, body {
   -webkit-overflow-scrolling: touch !important;
   touch-action: pan-x !important;
   scroll-behavior: smooth;
-  padding: 4px 2px 8px 2px;
+  min-height: 46px;
+  height: 46px;
+  padding: 4px 2px;
   min-width: 0;
   flex: 1;
   max-width: 100%;
@@ -3262,17 +3268,22 @@ html, body {
 .filter-chip {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 6px 14px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0 14px;
+  line-height: 32px;
   border-radius: var(--radius-full);
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0 !important;
+  box-sizing: border-box;
   transition: var(--transition-smooth);
   user-select: none;
 }
