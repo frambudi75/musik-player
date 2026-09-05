@@ -2049,8 +2049,35 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.AudioCore.setVocalRemover(false);
       window.AudioCore.setHapticBass(false);
       window.AudioCore.set8DAudio(false);
+      window.AudioCore.setSurroundSound(false);
 
-      if (mode === '8d') {
+      if (mode === 'dolby') {
+        // Dolby 3D Spatial Surround Widener
+        if (dspSpeedSlider) {
+          dspSpeedSlider.value = 1.0;
+          dspSpeedVal.textContent = '1.0x';
+        }
+        window.AudioCore.setPlaybackRate(1.0);
+        window.AudioCore.setReverb(false);
+        window.AudioCore.setSurroundSound(true, 0.85);
+        window.AudioCore.setBassBoost(5);
+        window.AudioCore.setTrebleBoost(4);
+        window.AudioCore.applyPreset('dolby');
+        showToast('Dolby 3D Surround Spatializer Aktif 🌐', '✨');
+      } else if (mode === 'concert') {
+        // Live Concert Hall & Stadium Reverb
+        if (dspSpeedSlider) {
+          dspSpeedSlider.value = 1.0;
+          dspSpeedVal.textContent = '1.0x';
+        }
+        window.AudioCore.setPlaybackRate(1.0);
+        window.AudioCore.setSurroundSound(false);
+        window.AudioCore.setReverb(true, 0.52, 'concert');
+        window.AudioCore.setBassBoost(7);
+        window.AudioCore.setTrebleBoost(3.5);
+        window.AudioCore.applyPreset('concert');
+        showToast('Live Concert Hall Mode Aktif 🏟️', '✨');
+      } else if (mode === '8d') {
         // 8D Spatial Audio 360 rotation
         const speed = parseFloat(dsp8dSpeedSlider ? dsp8dSpeedSlider.value : 1.0);
         window.AudioCore.set8DAudio(true, speed);

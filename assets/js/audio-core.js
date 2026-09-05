@@ -39,6 +39,18 @@ class AudioCore {
     this.spatial8DAngle = 0;
     this.spatial8DAnimId = null;
 
+    // Dolby 3D Spatial Surround Widener (Haas Effect + Psychoacoustic Air)
+    this.isSurroundActive = false;
+    this.surroundSplitter = null;
+    this.surroundMerger = null;
+    this.surroundAirFilter = null;
+    this.surroundDelayL = null;
+    this.surroundDelayR = null;
+    this.surroundCrossGainL = null;
+    this.surroundCrossGainR = null;
+    this.surroundDirectL = null;
+    this.surroundDirectR = null;
+
     // Ambient White Noise Mixer (Rain, Campfire, Vinyl)
     this.ambientType = 'off';
     this.ambientVolume = 0.4;
@@ -65,7 +77,9 @@ class AudioCore {
       electronic: [6, 5, 2, 0, -2, 2, 1, 2, 4, 5],
       jazz: [3, 2, 1, 2, -1, -1, 0, 1, 3, 4],
       vocal: [-3, -2, 0, 3, 6, 5, 3, 1, -1, -2],
-      acoustic: [4, 3, 2, 1, 2, 2, 3, 3, 4, 3]
+      acoustic: [4, 3, 2, 1, 2, 2, 3, 3, 4, 3],
+      dolby: [4, 3, 1, 0, 1, 2, 3, 5, 6, 5],
+      concert: [5, 4, 3, 1, 0, 1, 2, 4, 5, 4]
     };
 
     this.currentPreset = 'flat';
@@ -95,6 +109,41 @@ class AudioCore {
       const factor = Math.pow(1 - n, decay);
       left[i] = (Math.random() * 2 - 1) * factor;
       right[i] = (Math.random() * 2 - 1) * factor;
+    }
+    return impulse;
+  }
+
+  createConcertImpulse(seconds = 3.4, decay = 1.7) {
+    if (!this.audioCtx) return null;
+    const rate = this.audioCtx.sampleRate;
+    const length = Math.floor(rate * seconds);
+    const impulse = this.audioCtx.createBuffer(2, length, rate);
+    const left = impulse.getChannelData(0);
+    const right = impulse.getChannelData(1);
+
+    // Early discrete reflections simulating large arena/stadium hall acoustic boundaries
+    const earlyDelays = [
+      { t: 0.024, amp: 0.65 },
+      { t: 0.048, amp: 0.52 },
+      { t: 0.082, amp: 0.40 },
+      { t: 0.125, amp: 0.32 },
+      { t: 0.180, amp: 0.25 }
+    ];
+
+    for (let i = 0; i < length; i++) {
+      const n = i / length;
+      const t = i / rate;
+      const decayFactor = Math.pow(1 - n, decay);
+
+      let earlyBoost = 0;
+      for (const ref of earlyDelays) {
+        if (Math.abs(t - ref.t) < 0.002) {
+          earlyBoost += ref.amp;
+        }
+      }
+
+      left[i] = ((Math.random() * 2 - 1) * decayFactor) + (earlyBoost * (Math.random() * 2 - 1));
+      right[i] = ((Math.random() * 2 - 1) * decayFactor) + (earlyBoost * (Math.random() * 2 - 1));
     }
     return impulse;
   }
@@ -201,8 +250,15 @@ class AudioCore {
 
     try {
       if (this.isVocalRemoverActive) {
+        // If surround is active, disable surround first
+        if (this.isSurroundActive) {
+          this.setSurroundSound(false);
+        }
+
         // Disconnect direct path
-        this.trebleBoostNode.disconnect(this.preampNode);
+        try {
+          this.trebleBoostNode.disconnect(this.preampNode);
+        } catch(e) {}
 
         if (!this.splitterNode) {
           this.splitterNode = this.audioCtx.createChannelSplitter(2);
@@ -230,10 +286,103 @@ class AudioCore {
             this.trebleBoostNode.disconnect(this.splitterNode);
           } catch(e) {}
         }
-        this.trebleBoostNode.connect(this.preampNode);
+        if (!this.isSurroundActive) {
+          try {
+            this.trebleBoostNode.connect(this.preampNode);
+          } catch(e) {}
+        }
       }
     } catch (e) {
       console.warn('Error toggling vocal remover:', e);
+    }
+  }
+
+  setSurroundSound(enabled, intensity = 0.75) {
+    this.isSurroundActive = !!enabled;
+    if (!this.audioCtx || !this.trebleBoostNode || !this.preampNode) return;
+
+    try {
+      if (this.isSurroundActive) {
+        // If vocal remover is active, disable it first
+        if (this.isVocalRemoverActive) {
+          this.setVocalRemover(false);
+        }
+
+        try {
+          this.trebleBoostNode.disconnect(this.preampNode);
+        } catch(e) {}
+
+        if (!this.surroundSplitter) {
+          this.surroundSplitter = this.audioCtx.createChannelSplitter(2);
+          this.surroundMerger = this.audioCtx.createChannelMerger(2);
+
+          // Psychoacoustic high-air presence for holographic 3D clarity
+          this.surroundAirFilter = this.audioCtx.createBiquadFilter();
+          this.surroundAirFilter.type = 'highshelf';
+          this.surroundAirFilter.frequency.value = 7500;
+          this.surroundAirFilter.gain.value = 3.5;
+
+          // Haas micro-delay for cross-channel stereo widening (15ms)
+          this.surroundDelayL = this.audioCtx.createDelay(0.05);
+          this.surroundDelayL.delayTime.value = 0.015;
+          this.surroundDelayR = this.audioCtx.createDelay(0.05);
+          this.surroundDelayR.delayTime.value = 0.015;
+
+          // Cross-feed gains with subtle out-of-phase widening
+          this.surroundCrossGainL = this.audioCtx.createGain();
+          this.surroundCrossGainR = this.audioCtx.createGain();
+
+          // Direct channel gains
+          this.surroundDirectL = this.audioCtx.createGain();
+          this.surroundDirectL.gain.value = 1.0;
+          this.surroundDirectR = this.audioCtx.createGain();
+          this.surroundDirectR.gain.value = 1.0;
+
+          // Wire internal surround network
+          this.surroundAirFilter.connect(this.surroundSplitter);
+
+          // Direct paths: Left -> Merger 0, Right -> Merger 1
+          this.surroundSplitter.connect(this.surroundDirectL, 0);
+          this.surroundDirectL.connect(this.surroundMerger, 0, 0);
+
+          this.surroundSplitter.connect(this.surroundDirectR, 1);
+          this.surroundDirectR.connect(this.surroundMerger, 0, 1);
+
+          // Crossfeed paths (Haas microdelay + phase decorrelation):
+          // Left into Right with microdelay
+          this.surroundSplitter.connect(this.surroundDelayR, 0);
+          this.surroundDelayR.connect(this.surroundCrossGainR);
+          this.surroundCrossGainR.connect(this.surroundMerger, 0, 1);
+
+          // Right into Left with microdelay
+          this.surroundSplitter.connect(this.surroundDelayL, 1);
+          this.surroundDelayL.connect(this.surroundCrossGainL);
+          this.surroundCrossGainL.connect(this.surroundMerger, 0, 0);
+        }
+
+        // Adjust intensity
+        const crossAmount = Math.max(0.12, Math.min(0.48, 0.34 * intensity));
+        const now = this.audioCtx.currentTime;
+        this.surroundCrossGainL.gain.setValueAtTime(-crossAmount, now);
+        this.surroundCrossGainR.gain.setValueAtTime(-crossAmount, now);
+
+        this.trebleBoostNode.connect(this.surroundAirFilter);
+        this.surroundMerger.connect(this.preampNode);
+      } else {
+        if (this.surroundMerger) {
+          try {
+            this.surroundMerger.disconnect(this.preampNode);
+            this.trebleBoostNode.disconnect(this.surroundAirFilter);
+          } catch(e) {}
+        }
+        if (!this.isVocalRemoverActive) {
+          try {
+            this.trebleBoostNode.connect(this.preampNode);
+          } catch(e) {}
+        }
+      }
+    } catch(e) {
+      console.warn('Error toggling Dolby 3D Surround:', e);
     }
   }
 
@@ -391,23 +540,30 @@ class AudioCore {
 
   setPlaybackRate(rate) {
     const val = Math.max(0.5, Math.min(2.0, rate));
-    this.playbackRate = val;
+          this.playbackRate = val;
     this.audio.playbackRate = val;
     this.audio.preservesPitch = true;
   }
 
-  setReverb(enabled, wetAmount = 0.5) {
+  setReverb(enabled, wetAmount = 0.5, type = 'studio') {
     this.isReverbActive = !!enabled;
     if (!this.audioCtx || !this.trebleBoostNode || !this.gainNode) return;
 
     if (enabled) {
       if (!this.reverbConvolver) {
         this.reverbConvolver = this.audioCtx.createConvolver();
-        this.reverbConvolver.buffer = this.createSyntheticImpulse(1.2, 2.0);
         this.reverbWetGain = this.audioCtx.createGain();
         this.reverbConvolver.connect(this.reverbWetGain);
         this.reverbWetGain.connect(this.gainNode);
       }
+
+      // Generate impulse buffer based on reverb environment
+      if (type === 'concert' || type === 'hall') {
+        this.reverbConvolver.buffer = this.createConcertImpulse(3.4, 1.7);
+      } else {
+        this.reverbConvolver.buffer = this.createSyntheticImpulse(1.2, 2.0);
+      }
+
       try {
         this.trebleBoostNode.connect(this.reverbConvolver);
       } catch (e) {}
@@ -604,9 +760,30 @@ class AudioCore {
     this.activeDspPreset = presetName;
 
     switch (presetName) {
+      case 'dolby':
+        this.audio.playbackRate = 1.0;
+        this.audio.preservesPitch = true;
+        this.setReverb(false);
+        this.setSurroundSound(true, 0.85);
+        this.setBassBoost(5);
+        this.setTrebleBoost(4);
+        this.applyPreset('dolby');
+        break;
+
+      case 'concert':
+        this.audio.playbackRate = 1.0;
+        this.audio.preservesPitch = true;
+        this.setSurroundSound(false);
+        this.setReverb(true, 0.52, 'concert');
+        this.setBassBoost(7);
+        this.setTrebleBoost(3.5);
+        this.applyPreset('concert');
+        break;
+
       case 'nightcore':
         this.audio.playbackRate = 1.25;
         this.audio.preservesPitch = false; // Characteristic high-pitched energetic vocal
+        this.setSurroundSound(false);
         this.setReverb(false);
         this.setBassBoost(4);
         break;
@@ -614,6 +791,7 @@ class AudioCore {
       case 'slowed_reverb':
         this.audio.playbackRate = 0.85;
         this.audio.preservesPitch = false; // Deep pitch
+        this.setSurroundSound(false);
         this.setReverb(true, 0.65);
         this.setBassBoost(6);
         this.setTrebleBoost(-2);
@@ -622,6 +800,7 @@ class AudioCore {
       case 'vaporwave':
         this.audio.playbackRate = 0.78;
         this.audio.preservesPitch = false;
+        this.setSurroundSound(false);
         this.setReverb(true, 0.45);
         this.setTrebleBoost(-5);
         break;
@@ -629,6 +808,7 @@ class AudioCore {
       case 'bass_heavy':
         this.audio.playbackRate = 1.0;
         this.audio.preservesPitch = true;
+        this.setSurroundSound(false);
         this.setReverb(false);
         this.applyPreset('bass_boost');
         this.setBassBoost(10);
@@ -638,6 +818,7 @@ class AudioCore {
       default:
         this.audio.playbackRate = 1.0;
         this.audio.preservesPitch = true;
+        this.setSurroundSound(false);
         this.setReverb(false);
         this.applyPreset('flat');
         this.setBassBoost(0);

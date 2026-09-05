@@ -719,6 +719,8 @@
         <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 8px;">Mode Audio Studio (DSP FX Presets):</span>
         <div class="dsp-modes-grid" style="display: flex; gap: 8px; flex-wrap: wrap;">
           <button class="dsp-mode-chip active" id="dsp-clean-btn" data-mode="clean">Studio Clean</button>
+          <button class="dsp-mode-chip" id="dsp-dolby-btn" data-mode="dolby" title="Soundstage 3D melebar dengan kejernihan Dolby Surround">Dolby 3D Surround 🌐</button>
+          <button class="dsp-mode-chip" id="dsp-concert-btn" data-mode="concert" title="Akustik panggung konser live & stadium reverb">Live Concert Hall 🏟️</button>
           <button class="dsp-mode-chip" id="dsp-8d-btn" data-mode="8d" title="Audio berputar mengelilingi kepala 360 derajat">8D Spatial Audio 🎧</button>
           <button class="dsp-mode-chip" id="dsp-slowed-btn" data-mode="slowed">Slowed + Reverb 🌌</button>
           <button class="dsp-mode-chip" id="dsp-nightcore-btn" data-mode="nightcore">Nightcore ⚡</button>
