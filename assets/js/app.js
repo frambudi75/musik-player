@@ -4020,48 +4020,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!str) return '';
     let s = str.toLowerCase();
     s = s.replace(/\.(mp3|flac|wav|ogg|m4a|aac|opus)$/i, '');
-    s = s.replace(/[｜|]/g, ' - ');
+    // Normalize all unicode dashes (hyphen-minus, en-dash, em-dash, figure dash, minus sign, etc.)
+    s = s.replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g, '-');
+    s = s.replace(/[|｜]/g, ' - ');
+    s = s.replace(/\s*-\s*/g, ' - ');
+    // Remove noise tags
     s = s.replace(/\((official\s*(music|lyric|audio|video|hd|4k|mv)?\s*(video|audio|clip)?|lyrics?|lirik|audio|mv|hd|4k|visualizer|remastered|full\s*(version|audio|song)?|live[^)]*|jadul[^)]*|viral[^)]*|cover(ed)?\s*by[^)]*|cover\b[^)]*)\)/gi, '');
     s = s.replace(/\[(official\s*(music|lyric|audio|video|hd|4k|mv)?\s*(video|audio|clip)?|lyrics?|lirik|audio|mv|hd|4k|visualizer|remastered|full\s*(version|audio|song)?|live[^\]]*|jadul[^\]]*|viral[^\]]*|cover(ed)?\s*by[^\]]*|cover\b[^\]]*)\]/gi, '');
     s = s.replace(/\b(official\s*(music|lyric|audio|video)?\s*(video|audio|clip)?|lyric\s*video|music\s*video|320kbps|128kbps|256kbps)\b/gi, '');
     return s.trim();
   }
 
-  function parseSongIdentity(song) {
-    const fClean = cleanSongNoise(song.filename || '');
-    const tClean = cleanSongNoise(song.title || '');
-    const rawArtist = cleanSongNoise(song.artist || '').replace(/[^a-z0-9]/g, '');
+  function extractPureTitle(rawTitle, rawFilename, rawArtist) {
+    const fClean = cleanSongNoise(rawFilename || '');
+    const tClean = cleanSongNoise(rawTitle || '');
+    const artClean = cleanSongNoise(rawArtist || '').replace(/[^a-z0-9]/g, '');
+    const tAlpha = tClean.replace(/[^a-z0-9]/g, '');
 
-    let titlePart = tClean;
-    let artistPart = rawArtist;
+    const isBogusTitle = !tAlpha || tAlpha === artClean || tAlpha.length < 3 || ['cover', 'audio', 'track', 'single', 'unknown', 'music'].includes(tAlpha);
+
+    let bestTitle = isBogusTitle ? '' : tClean;
 
     if (fClean.includes(' - ')) {
       const parts = fClean.split(' - ').map(p => p.trim()).filter(Boolean);
       if (parts.length >= 2) {
-        const p0Clean = parts[0].replace(/[^a-z0-9]/g, '');
-        const p1Clean = parts[1].replace(/[^a-z0-9]/g, '');
+        const p0Alpha = parts[0].replace(/[^a-z0-9]/g, '');
+        const p1Alpha = parts[1].replace(/[^a-z0-9]/g, '');
 
-        if (rawArtist && (rawArtist.includes(p0Clean) || p0Clean.includes(rawArtist))) {
-          artistPart = p0Clean;
-          titlePart = parts.slice(1).join(' ');
-        } else if (rawArtist && (rawArtist.includes(p1Clean) || p1Clean.includes(rawArtist))) {
-          artistPart = p1Clean;
-          titlePart = parts[0];
-        } else {
-          artistPart = p0Clean;
-          titlePart = parts.slice(1).join(' ');
+        if (artClean && (artClean.includes(p0Alpha) || p0Alpha.includes(artClean))) {
+          bestTitle = parts.slice(1).join(' ');
+        } else if (artClean && (artClean.includes(p1Alpha) || p1Alpha.includes(artClean))) {
+          bestTitle = parts[0];
+        } else if (isBogusTitle) {
+          bestTitle = parts[0];
         }
       }
+    } else if (isBogusTitle) {
+      bestTitle = fClean;
     }
 
-    const pureTitle = cleanSongNoise(titlePart).replace(/[^a-z0-9]/g, '');
-    const pureArtist = artistPart.replace(/[^a-z0-9]/g, '');
-
-    return {
-      pureTitle: pureTitle.length > 2 ? pureTitle : cleanSongNoise(song.title || song.filename || '').replace(/[^a-z0-9]/g, ''),
-      pureArtist,
-      size: song.size || 0
-    };
+    const res = cleanSongNoise(bestTitle).replace(/[^a-z0-9]/g, '');
+    return res.length > 2 ? res : fClean.replace(/[^a-z0-9]/g, '');
   }
 
   function areTracksDuplicate(a, b) {
@@ -4069,16 +4068,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Identical exact file size > 100KB is 100% duplicate
     if (a.size && b.size && a.size > 100000 && a.size === b.size) return true;
 
-    const infoA = parseSongIdentity(a);
-    const infoB = parseSongIdentity(b);
+    const titleA = extractPureTitle(a.title, a.filename, a.artist);
+    const titleB = extractPureTitle(b.title, b.filename, b.artist);
 
-    if (!infoA.pureTitle || !infoB.pureTitle || infoA.pureTitle.length < 3 || infoB.pureTitle.length < 3) return false;
+    if (!titleA || !titleB || titleA.length < 3 || titleB.length < 3) return false;
 
-    // Direct title identity match
-    if (infoA.pureTitle === infoB.pureTitle) {
-      if (!infoA.pureArtist || !infoB.pureArtist || infoA.pureArtist === infoB.pureArtist || infoA.pureArtist.includes(infoB.pureArtist) || infoB.pureArtist.includes(infoA.pureArtist)) {
-        return true;
-      }
+    // Both songs MUST have the same core title!
+    if (titleA !== titleB) return false;
+
+    const artA = cleanSongNoise(a.artist || '').replace(/[^a-z0-9]/g, '');
+    const artB = cleanSongNoise(b.artist || '').replace(/[^a-z0-9]/g, '');
+
+    if (!artA || !artB || artA === artB || artA.includes(artB) || artB.includes(artA)) {
+      return true;
     }
 
     return false;

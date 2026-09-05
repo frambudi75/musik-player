@@ -171,10 +171,40 @@ try {
                 $lyricsUrl = 'songs/' . implode('/', array_map('rawurlencode', explode('/', $lrcRel)));
             }
 
+            $rawTitle = !empty($meta['title']) ? trim($meta['title']) : '';
+            $rawArtist = !empty($meta['artist']) ? trim($meta['artist']) : 'Unknown Artist';
+            $fnNoExt = pathinfo($fileName, PATHINFO_FILENAME);
+
+            // Sanitize bogus ID3 title (e.g. if ID3 title is literally just the artist name or generic cover tag)
+            $cleanTAlpha = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($rawTitle));
+            $cleanAAlpha = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($rawArtist));
+
+            if (empty($rawTitle) || $cleanTAlpha === $cleanAAlpha || in_array($cleanTAlpha, ['cover', 'audio', 'track', 'single', 'unknown', 'music', 'official', 'mv', 'hd'])) {
+                if (strpos($fnNoExt, ' - ') !== false || strpos($fnNoExt, ' ｜ ') !== false || strpos($fnNoExt, ' | ') !== false) {
+                    $parts = preg_split('/\s*[-–—|｜]\s*/u', $fnNoExt);
+                    $parts = array_values(array_filter(array_map('trim', $parts)));
+                    if (count($parts) >= 2) {
+                        $p0Alpha = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($parts[0]));
+                        $p1Alpha = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($parts[1]));
+                        if (!empty($cleanAAlpha) && (strpos($cleanAAlpha, $p0Alpha) !== false || strpos($p0Alpha, $cleanAAlpha) !== false)) {
+                            $rawTitle = implode(' - ', array_slice($parts, 1));
+                        } else if (!empty($cleanAAlpha) && (strpos($cleanAAlpha, $p1Alpha) !== false || strpos($p1Alpha, $cleanAAlpha) !== false)) {
+                            $rawTitle = $parts[0];
+                        } else {
+                            $rawTitle = $parts[0];
+                        }
+                    } else {
+                        $rawTitle = $fnNoExt;
+                    }
+                } else {
+                    $rawTitle = $fnNoExt;
+                }
+            }
+
             $songs[] = [
                 'id' => 'track_' . md5($relPath),
-                'title' => !empty($meta['title']) ? $meta['title'] : pathinfo($fileName, PATHINFO_FILENAME),
-                'artist' => !empty($meta['artist']) ? $meta['artist'] : 'Unknown Artist',
+                'title' => $rawTitle,
+                'artist' => $rawArtist,
                 'album' => !empty($meta['album']) ? $meta['album'] : 'Single',
                 'year' => $meta['year'] ?? '',
                 'genre' => $meta['genre'] ?? 'Other',
