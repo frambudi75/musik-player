@@ -1,6 +1,26 @@
-# Catatan Riwayat Versi (Changelog) — Aura Music 📜🎵
+# Catatan Riwayat Versi (Changelog) — NadaKita 📜🎵
 
 Semua pembaruan penting, penambahan fitur, dan perbaikan bug didokumentasikan di berkas ini.
+
+---
+
+## [v2.4.0] - 2026-09-06
+### 🛠️ Pindai Duplikat & Penghapusan Cerdas
+* **Akurat Tanpa False Positive**: Pemisahan judul inti (*core title*) dan artis kini memperhitungkan normalisasi karakter Unicode dash (`–`, `—`, `−`, `|`), mencegah salah grup lagu berbeda dari artis yang sama.
+* **Smart ID3 Title Sanitizer**: Otomatis mendeteksi dan memperbaiki tag ID3 palsu atau kosong dengan membaca nama berkas asli (`Title - Artist`).
+* **Self-Healing Delete API (`api/delete.php`)**: Menghapus dependensi kaku pada file cache disk, menambahkan fallback otomatis ke memori Redis / pemindaian instan disk, serta penghapusan fisik file audio dan `.lrc` yang aman.
+* **Rencana Database & Roadmap (`docs/roadmap.md`)**: Dokumentasi strategi transisi Flat-File ke SQLite saat koleksi mencapai ≥ 500 lagu dengan konsep Hybrid Guest + Account Mode.
+
+---
+
+## [v2.3.0] - 2026-09-05
+### 🎨 Rebranding NadaKita & Fitur Interaktif
+* **Rebranding NadaKita**: Transformasi identitas dari Aura Music menjadi **NadaKita**, lengkap dengan tipografi modern, logo dinamis, dan warna aksen baru.
+* **5 Pilihan Tema Warna**: Dukungan tema warna kustom (Cyber Emerald, Cyber Neon Cyan, Cyber Violet, Sunset Amber, Midnight Obsidian).
+* **Smart Shuffle (Fisher-Yates)**: Algoritma pengacakan antrean tanpa pengulangan lagu yang baru saja diputar.
+* **Mini Synced Lyrics Ticker**: Indikator baris lirik aktif yang meluncur langsung di player bar bawah.
+* **NadaKita Wrapped Story Canvas**: Generator infografis statistik musik siap unduh ke format gambar story.
+* **Multi-Tier In-Memory Cache (`api/cache_helper.php`)**: Integrasi Redis / APCu / In-Memory caching dengan ETag HTTP 304 response.
 
 ---
 
