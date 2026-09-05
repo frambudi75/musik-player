@@ -65,6 +65,32 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* Universal Custom Dark Scrollbar (Chrome, Edge, Safari, Opera) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-full);
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.38);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 html, body {
@@ -79,6 +105,104 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   user-select: none;
+}
+
+/* Custom Scrollbar Enhancements for All Modals, Panels, & Drawers */
+.main-content,
+.sidebar-playlists-scroll,
+.panel-content,
+.modal-card,
+.modal-body,
+#dup-groups-container,
+#batch-tracklist,
+#playlist-selection-list,
+#enrich-results-wrap,
+#lrc-tapper-lines-container,
+#health-broken-list,
+#queue-list,
+#lyrics-sync-view,
+.table-container,
+.songs-grid,
+.top-tracks-list,
+.top-artists-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.main-content::-webkit-scrollbar,
+.sidebar-playlists-scroll::-webkit-scrollbar,
+.panel-content::-webkit-scrollbar,
+.modal-card::-webkit-scrollbar,
+.modal-body::-webkit-scrollbar,
+#dup-groups-container::-webkit-scrollbar,
+#batch-tracklist::-webkit-scrollbar,
+#playlist-selection-list::-webkit-scrollbar,
+#enrich-results-wrap::-webkit-scrollbar,
+#lrc-tapper-lines-container::-webkit-scrollbar,
+#health-broken-list::-webkit-scrollbar,
+#queue-list::-webkit-scrollbar,
+#lyrics-sync-view::-webkit-scrollbar,
+.table-container::-webkit-scrollbar,
+.songs-grid::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.main-content::-webkit-scrollbar-track,
+.sidebar-playlists-scroll::-webkit-scrollbar-track,
+.panel-content::-webkit-scrollbar-track,
+.modal-card::-webkit-scrollbar-track,
+.modal-body::-webkit-scrollbar-track,
+#dup-groups-container::-webkit-scrollbar-track,
+#batch-tracklist::-webkit-scrollbar-track,
+#playlist-selection-list::-webkit-scrollbar-track,
+#enrich-results-wrap::-webkit-scrollbar-track,
+#lrc-tapper-lines-container::-webkit-scrollbar-track,
+#health-broken-list::-webkit-scrollbar-track,
+#queue-list::-webkit-scrollbar-track,
+#lyrics-sync-view::-webkit-scrollbar-track,
+.table-container::-webkit-scrollbar-track,
+.songs-grid::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-full);
+}
+
+.main-content::-webkit-scrollbar-thumb,
+.sidebar-playlists-scroll::-webkit-scrollbar-thumb,
+.panel-content::-webkit-scrollbar-thumb,
+.modal-card::-webkit-scrollbar-thumb,
+.modal-body::-webkit-scrollbar-thumb,
+#dup-groups-container::-webkit-scrollbar-thumb,
+#batch-tracklist::-webkit-scrollbar-thumb,
+#playlist-selection-list::-webkit-scrollbar-thumb,
+#enrich-results-wrap::-webkit-scrollbar-thumb,
+#lrc-tapper-lines-container::-webkit-scrollbar-thumb,
+#health-broken-list::-webkit-scrollbar-thumb,
+#queue-list::-webkit-scrollbar-thumb,
+#lyrics-sync-view::-webkit-scrollbar-thumb,
+.table-container::-webkit-scrollbar-thumb,
+.songs-grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: var(--radius-full);
+}
+
+.main-content::-webkit-scrollbar-thumb:hover,
+.sidebar-playlists-scroll::-webkit-scrollbar-thumb:hover,
+.panel-content::-webkit-scrollbar-thumb:hover,
+.modal-card::-webkit-scrollbar-thumb:hover,
+.modal-body::-webkit-scrollbar-thumb:hover,
+#dup-groups-container::-webkit-scrollbar-thumb:hover,
+#batch-tracklist::-webkit-scrollbar-thumb:hover,
+#playlist-selection-list::-webkit-scrollbar-thumb:hover,
+#enrich-results-wrap::-webkit-scrollbar-thumb:hover,
+#lrc-tapper-lines-container::-webkit-scrollbar-thumb:hover,
+#health-broken-list::-webkit-scrollbar-thumb:hover,
+#queue-list::-webkit-scrollbar-thumb:hover,
+#lyrics-sync-view::-webkit-scrollbar-thumb:hover,
+.table-container::-webkit-scrollbar-thumb:hover,
+.songs-grid::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary, #3b82f6);
 }
 
 /* Dynamic Ambient Glow Mesh Background */

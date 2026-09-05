@@ -1377,7 +1377,7 @@
             </div>
           </div>
 
-          <div id="dup-groups-container" style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
+          <div id="dup-groups-container" style="max-height: 360px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; padding-right: 6px;">
             <!-- Dynamic Duplicate Groups -->
           </div>
 
