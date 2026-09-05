@@ -327,6 +327,8 @@
           </div>
         </div>
 
+        <!-- Bottom Spacer to guarantee zero cutoff above bottom player bar -->
+        <div class="content-bottom-spacer" style="height: 140px; min-height: 140px; flex-shrink: 0; pointer-events: none; width: 100%;"></div>
       </main>
 
       <!-- ==========================================
