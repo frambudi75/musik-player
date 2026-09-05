@@ -239,6 +239,8 @@ html, body {
   height: 100vh;
   height: 100dvh;
   width: 100vw;
+  max-width: 100vw;
+  overflow-x: hidden !important;
   background: transparent;
 }
 
@@ -248,7 +250,10 @@ html, body {
   flex: 1;
   height: calc(100vh - var(--player-height));
   height: calc(100dvh - var(--player-height));
-  overflow: hidden;
+  overflow-x: hidden !important;
+  width: 100%;
+  max-width: 100vw;
+  position: relative;
 }
 
 /* ==========================================================================
@@ -2595,9 +2600,12 @@ html, body {
 
   .main-content {
     padding: 0 12px 140px 12px !important;
-    width: 100%;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    box-sizing: border-box !important;
   }
 
   /* Sticky Top Header */
@@ -2610,16 +2618,17 @@ html, body {
     justify-content: space-between;
     height: 56px !important;
     min-height: 56px !important;
-    padding: 8px 12px !important;
-    margin: 0 -12px 14px -12px !important;
+    padding: 8px 0 !important;
+    margin: 0 0 14px 0 !important;
     gap: 10px;
     background: rgba(10, 12, 18, 0.98) !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-    box-sizing: border-box;
-    width: calc(100% + 24px) !important;
-    overflow: visible;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden;
   }
   .header-left {
     flex: 1;
@@ -2973,26 +2982,87 @@ html, body {
     gap: 10px;
   }
   .stats-hero-banner {
-    padding: 18px 16px !important;
+    padding: 14px 12px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
   }
   .stats-hero-content {
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: 16px !important;
+    gap: 12px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .stats-hero-left {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
   }
   .stats-hero-title {
-    font-size: 1.35rem !important;
+    font-size: 1.25rem !important;
+    word-break: break-word;
   }
   .stats-hero-spotlight {
     width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .stats-spotlight-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 12px !important;
+  }
+  .spotlight-body {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+  .spotlight-meta {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
+  }
+  .spotlight-title, .spotlight-artist {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+  }
+  .stats-badges-row {
+    gap: 6px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .persona-chip, .btn-wrapped-share {
+    font-size: 0.76rem !important;
+    padding: 4px 8px !important;
+    max-width: 100% !important;
   }
   .stats-overview-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 10px !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .stat-card {
+    padding: 12px 10px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .stat-num {
+    font-size: 1.5rem !important;
   }
   .stats-sections-flex {
     grid-template-columns: 1fr !important;
-    gap: 18px !important;
+    gap: 16px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 }
 
