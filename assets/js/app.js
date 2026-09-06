@@ -1611,18 +1611,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       const durationStr = formatTime(item.duration || 0);
 
       tr.innerHTML = `
-        <td style="text-align: center;">
+        <td class="song-cell-index">
           <span class="row-num">${index + 1}</span>
           <button class="row-play-btn" title="Putar ${escapeHTML(item.title)}">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
           </button>
         </td>
         <td>
-          <div class="song-meta-cell">
-            <img class="song-thumb-small" src="${escapeHTML(item.thumbnail || DEFAULT_COVER)}" alt="Cover" loading="lazy" />
-            <div class="song-meta-text">
-              <span class="song-title-cell" title="${escapeHTML(item.title)}">${escapeHTML(item.title)}</span>
-              <span class="song-artist-cell">${escapeHTML(item.artist)}</span>
+          <div class="song-cell-main">
+            <img class="song-thumbnail" src="${escapeHTML(item.thumbnail || DEFAULT_COVER)}" alt="Cover" loading="lazy" />
+            <div class="song-info-stack">
+              <span class="song-cell-title" title="${escapeHTML(item.title)}">${escapeHTML(item.title)}</span>
+              <span class="song-cell-artist">${escapeHTML(item.artist)}</span>
             </div>
           </div>
         </td>
@@ -1630,10 +1630,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           <span class="online-stream-badge">🌐 YouTube Stream</span>
         </td>
         <td>
-          <span class="song-duration-cell">${durationStr}</span>
+          <span class="song-cell-duration">${durationStr}</span>
         </td>
         <td style="text-align: right; padding-right: 14px;">
-          <div class="song-actions-cell" style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+          <div class="song-actions" style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
             <button class="btn-online-download" data-yt-id="${escapeHTML(item.id)}" title="Download & Simpan ke Koleksi Lokal">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
