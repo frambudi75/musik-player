@@ -38,6 +38,11 @@ def search_youtube(query, limit=10):
         'skip_download': True,
         'quiet': True,
         'no_warnings': True,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'web']
+            }
+        }
     }
 
     results = []
@@ -90,6 +95,11 @@ def get_stream_url(video_id_or_url):
         'skip_download': True,
         'quiet': True,
         'no_warnings': True,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'ios', 'web']
+            }
+        }
     }
     if ffmpeg_dir:
         ydl_opts['ffmpeg_location'] = ffmpeg_dir

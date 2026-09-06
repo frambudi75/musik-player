@@ -96,7 +96,6 @@ function purePhpGetStreamData($videoId) {
         if ($httpCode === 200 && $resp) {
             $data = json_decode($resp, true);
             if ($data && !empty($data['adaptiveFormats'])) {
-                // Find best audio format
                 $bestAudio = null;
                 $highestBitrate = 0;
                 foreach ($data['adaptiveFormats'] as $fmt) {
@@ -165,7 +164,7 @@ if (!$streamData || empty($streamData['stream_url'])) {
         header('Content-Type: application/json');
         echo json_encode([
             'status' => 'error',
-            'message' => 'Gagal mengekstrak stream audio dari YouTube. Pastikan server memiliki koneksi internet dan modul python / yt-dlp.'
+            'message' => 'Gagal mengekstrak stream audio dari YouTube. Pastikan server memiliki koneksi internet.'
         ]);
         exit;
     }
@@ -188,7 +187,9 @@ curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-curl_setopt($ch, CURLOPT_BUFFERSIZE, 128 * 1024); // 128KB chunks
+curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+curl_setopt($ch, CURLOPT_TCP_KEEPALIVE, 1);
+curl_setopt($ch, CURLOPT_BUFFERSIZE, 64 * 1024); // 64KB chunks for smooth buffering
 curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
 curl_setopt($ch, CURLOPT_TIMEOUT, 0);
 
@@ -203,42 +204,49 @@ if (!empty($range)) {
 
 curl_setopt($ch, CURLOPT_HTTPHEADER, $reqHeaders);
 
-// Capture response headers from YouTube CDN
+// Capture and forward response headers
 $sentHeaders = false;
-curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($curl, $header) use (&$sentHeaders, $mimeType) {
+curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($curl, $header) use (&$sentHeaders, $mimeType, $range) {
     $len = strlen($header);
     $headerTrim = trim($header);
     
     if (empty($headerTrim)) {
+        // End of headers, send CORS & Content-Type
+        if (!$sentHeaders) {
+            header('Access-Control-Allow-Origin: *');
+            header('Access-Control-Allow-Methods: GET, HEAD, OPTIONS');
+            header('Access-Control-Expose-Headers: Content-Length, Content-Range, Accept-Ranges');
+            header('Content-Type: ' . $mimeType);
+            header('Accept-Ranges: bytes');
+            header('Cache-Control: public, max-age=14400');
+            $sentHeaders = true;
+        }
         return $len;
     }
 
-    // Pass relevant headers to browser
     $lower = strtolower($headerTrim);
     if (strpos($lower, 'http/') === 0) {
-        header($headerTrim);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        if ($httpCode === 206 || (!empty($range) && $httpCode === 200)) {
+            http_response_code(206);
+        } elseif ($httpCode > 0) {
+            http_response_code($httpCode);
+        }
     } elseif (strpos($lower, 'content-range:') === 0 ||
               strpos($lower, 'content-length:') === 0 ||
               strpos($lower, 'accept-ranges:') === 0) {
         header($headerTrim);
     }
 
-    if (!$sentHeaders && empty($headerTrim)) {
-        header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: GET, HEAD, OPTIONS');
-        header('Access-Control-Expose-Headers: Content-Length, Content-Range, Accept-Ranges');
-        header('Content-Type: ' . $mimeType);
-        header('Accept-Ranges: bytes');
-        header('Cache-Control: public, max-age=14400');
-        $sentHeaders = true;
-    }
-
     return $len;
 });
 
-// Write audio chunks directly to client output
-curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($curl, $data) use (&$sentHeaders, $mimeType) {
+// Write audio chunks directly to client
+curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($curl, $data) use (&$sentHeaders, $mimeType, $range) {
     if (!$sentHeaders) {
+        if (!empty($range)) {
+            http_response_code(206);
+        }
         header('Access-Control-Allow-Origin: *');
         header('Access-Control-Allow-Methods: GET, HEAD, OPTIONS');
         header('Access-Control-Expose-Headers: Content-Length, Content-Range, Accept-Ranges');
@@ -257,11 +265,10 @@ curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($curl, $data) use (&$sentHeader
 
 curl_exec($ch);
 
-if (curl_errno($ch)) {
-    // If stream URL expired, clear cache so next request regenerates
-    if (curl_errno($ch) === 28 || curl_getinfo($ch, CURLINFO_HTTP_CODE) === 403) {
-        AuraCache::delete($cacheKey);
-    }
+$httpStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+if (curl_errno($ch) || $httpStatus === 403 || $httpStatus === 410) {
+    // If URL expired, clear cache
+    AuraCache::delete($cacheKey);
 }
 
 curl_close($ch);
