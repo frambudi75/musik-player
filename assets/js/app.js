@@ -104,10 +104,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   const playlistNameInput = document.getElementById('playlist-name-input');
   const toastContainer = document.getElementById('toast-container');
 
+  // Online YouTube Streaming Elements
+  const onlineViewWrap = document.getElementById('online-view-wrap');
+  const onlineSearchInput = document.getElementById('online-search-input');
+  const onlineSearchSubmitBtn = document.getElementById('online-search-submit-btn');
+  const onlineLoadingState = document.getElementById('online-loading-state');
+  const onlineResultsContainer = document.getElementById('online-results-container');
+  const onlineTableBody = document.getElementById('online-table-body');
+  const onlineTagPills = document.querySelectorAll('.online-tag-pill');
+
   // State
   let currentNavTab = 'library';
   let currentActivePlaylistId = null;
   let isDraggingScrubber = false;
+  let onlineSearchResults = [];
+  let isSearchingOnline = false;
   let visualizer = null;
   let sleepTimerInterval = null;
   let sleepTargetSeconds = 0;
