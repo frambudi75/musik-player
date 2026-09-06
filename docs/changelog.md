@@ -4,6 +4,21 @@ Semua pembaruan penting, penambahan fitur, dan perbaikan bug didokumentasikan di
 
 ---
 
+## [v2.6.0] - 2026-09-06
+### 🌐 YouTube On-Demand Audio Streaming & Online Search
+* **On-Demand Audio Streamer (`api/stream.php` & `api/stream_extractor.py`)**:
+  * Memutar jutaan lagu langsung dari YouTube tanpa mendownload file MP3 ke harddisk server, menghemat 100% penyimpanan server.
+  * Mendukung *HTTP 206 Partial Content* (byte ranges) untuk *seeking / scrubbing* timeline lagu yang mulus dan instan.
+  * Header *Access-Control-Allow-Origin: \** penuh sehingga seluruh fitur Web Audio API (Equalizer 10-Band, Visualizer, Dolby 3D Surround, 8D Audio, Lirik Sinkron) tetap aktif normal.
+* **YouTube Music Search API (`api/yt_search.php`)**:
+  * Pencarian instan metadata lagu YouTube (ID, judul, artis/channel, durasi, thumbnail) dengan sistem *smart caching* (TTL 1 jam).
+* **UI Explorer Online (`index.php` & `assets/js/app.js`)**:
+  * Menu tab navigasi baru **"🌐 Cari Online (YouTube)"** di sidebar.
+  * Hero search bar + rekomendasi pencarian populer (*Top Hits Indo, Tulus, Nadin Amizah, Lo-Fi, Anime OST*).
+  * Tombol aksi cepat: *Putar Langsung*, *Tambah ke Antrean*, dan *Simpan ke Koleksi Lokal*.
+
+---
+
 ## [v2.5.0] - 2026-09-06
 ### 🎧 DSP Studio: Dolby 3D Surround & Live Concert Hall Modes
 * **🌐 Dolby 3D Spatial Surround Widener**:

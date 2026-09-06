@@ -144,23 +144,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   window.LyricsEngine.setContainers(lyricsView, immersiveLyrics);
 
-  // Helper: Get safe public cover URL (replaces legacy .covers/ with covers/)
-  function getSafeCoverUrl(songOrUrl) {
-    if (!songOrUrl) return DEFAULT_COVER;
-    let url = (typeof songOrUrl === 'object') ? (songOrUrl.cover || '') : String(songOrUrl);
+  // Helper: Get safe public cover URL (encodes special characters like # or Japanese symbols)
+  function getSafeCoverUrl(song) {
+    if (!song) return DEFAULT_COVER;
+    let url = (typeof song === 'object') ? (song.cover || '') : String(song);
     if (!url) return DEFAULT_COVER;
-    if (url.includes('songs/.covers/')) {
-      url = url.replace('songs/.covers/', 'songs/covers/');
+    if (url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
     }
-    return url;
+    const parts = url.split('/');
+    return parts.map(part => {
+      try {
+        return encodeURIComponent(decodeURIComponent(part));
+      } catch (e) {
+        return encodeURIComponent(part);
+      }
+    }).join('/');
   }
 
   // Helper: Get safe public audio URL (encodes special characters like # or Japanese symbols)
   function getSafeAudioUrl(songOrUrl) {
     if (!songOrUrl) return '';
-    let url = (typeof songOrUrl === 'object') ? (songOrUrl.url || '') : String(songOrUrl);
+    let url = (typeof songOrUrl === 'object') ? (songOrUrl.url || songOrUrl.src || '') : String(songOrUrl);
     if (!url) return '';
-    if (url.startsWith('blob:') || url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://')) {
+    if (url.startsWith('blob:') || url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://') || url.startsWith('api/')) {
       return url;
     }
     const parts = url.split('/');
@@ -954,11 +961,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (filterSortBar) filterSortBar.style.display = 'none';
       tableViewWrap.style.display = 'none';
       songsGrid.style.display = 'none';
+      if (onlineViewWrap) onlineViewWrap.style.display = 'none';
       statsViewWrap.style.display = 'block';
       renderStatsView();
       return;
     }
 
+    if (currentNavTab === 'online') {
+      heroBanner.style.display = 'none';
+      if (sectionHeader) sectionHeader.style.display = 'none';
+      if (filterSortBar) filterSortBar.style.display = 'none';
+      tableViewWrap.style.display = 'none';
+      songsGrid.style.display = 'none';
+      statsViewWrap.style.display = 'none';
+      if (onlineViewWrap) onlineViewWrap.style.display = 'block';
+      if (onlineSearchResults.length === 0) {
+        performOnlineSearch('Top Hits Indonesia 2026');
+      }
+      return;
+    }
+
+    if (onlineViewWrap) onlineViewWrap.style.display = 'none';
     heroBanner.style.display = 'flex';
     if (sectionHeader) sectionHeader.style.display = 'flex';
     if (filterSortBar) filterSortBar.style.display = 'flex';
@@ -1523,6 +1546,205 @@ document.addEventListener('DOMContentLoaded', async () => {
       searchClearBtn.style.display = 'none';
       searchInput.focus();
       renderCurrentView();
+    });
+  }
+
+  // ==========================================
+  // YOUTUBE ONLINE SEARCH & STREAM SYSTEM
+  // ==========================================
+  async function performOnlineSearch(query) {
+    if (!query || !query.trim() || isSearchingOnline) return;
+    isSearchingOnline = true;
+    if (onlineLoadingState) onlineLoadingState.style.display = 'block';
+    if (onlineResultsContainer) onlineResultsContainer.style.display = 'none';
+
+    try {
+      const res = await fetch(`api/yt_search.php?q=${encodeURIComponent(query.trim())}&limit=15`);
+      const json = await res.json();
+      if (json.status === 'success' && Array.isArray(json.results)) {
+        onlineSearchResults = json.results;
+        renderOnlineTable(onlineSearchResults);
+      } else {
+        showToast(json.message || 'Pencarian online gagal', '⚠️');
+        renderOnlineTable([]);
+      }
+    } catch (err) {
+      console.error('Online search error:', err);
+      showToast('Gagal terhubung ke YouTube Search API', '⚠️');
+      renderOnlineTable([]);
+    } finally {
+      isSearchingOnline = false;
+      if (onlineLoadingState) onlineLoadingState.style.display = 'none';
+      if (onlineResultsContainer) onlineResultsContainer.style.display = 'block';
+    }
+  }
+
+  function renderOnlineTable(tracks) {
+    if (!onlineTableBody) return;
+    onlineTableBody.innerHTML = '';
+
+    if (!tracks || tracks.length === 0) {
+      onlineTableBody.innerHTML = `
+        <tr>
+          <td colspan="5" style="text-align: center; padding: 48px 0; color: var(--text-secondary);">
+            🔍 Tidak ada lagu ditemukan. Coba ketik judul atau artis lain di atas.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tracks.forEach((item, index) => {
+      const tr = document.createElement('tr');
+      tr.className = 'song-row';
+      const durationStr = formatTime(item.duration || 0);
+
+      tr.innerHTML = `
+        <td style="text-align: center;">
+          <span class="row-num">${index + 1}</span>
+          <button class="row-play-btn" title="Putar ${escapeHTML(item.title)}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          </button>
+        </td>
+        <td>
+          <div class="song-meta-cell">
+            <img class="song-thumb-small" src="${escapeHTML(item.thumbnail || DEFAULT_COVER)}" alt="Cover" loading="lazy" />
+            <div class="song-meta-text">
+              <span class="song-title-cell" title="${escapeHTML(item.title)}">${escapeHTML(item.title)}</span>
+              <span class="song-artist-cell">${escapeHTML(item.artist)}</span>
+            </div>
+          </div>
+        </td>
+        <td class="col-album">
+          <span class="online-stream-badge">🌐 YouTube Stream</span>
+        </td>
+        <td>
+          <span class="song-duration-cell">${durationStr}</span>
+        </td>
+        <td style="text-align: right; padding-right: 14px;">
+          <div class="song-actions-cell" style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+            <button class="btn-online-download" data-yt-id="${escapeHTML(item.id)}" title="Download & Simpan ke Koleksi Lokal">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Simpan</span>
+            </button>
+            <button class="icon-btn queue-add-btn" title="Tambahkan ke Antrean">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+          </div>
+        </td>
+      `;
+
+      // Construct online playable track object
+      const trackObj = {
+        id: 'yt_' + item.id,
+        title: item.title,
+        artist: item.artist,
+        album: 'YouTube Stream',
+        duration: item.duration,
+        cover: item.thumbnail,
+        url: `api/stream.php?id=${item.id}`,
+        ytUrl: item.url,
+        isOnline: true,
+        ytId: item.id
+      };
+
+      // Click row to play
+      tr.addEventListener('click', (e) => {
+        if (e.target.closest('.btn-online-download') || e.target.closest('.queue-add-btn')) return;
+        window.PlaylistManager.playTrack(trackObj);
+        showToast(`Memutar online: "${item.title}"`, '🌐');
+      });
+
+      // Add to Queue
+      const qBtn = tr.querySelector('.queue-add-btn');
+      if (qBtn) {
+        qBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          window.PlaylistManager.addToQueue(trackObj);
+          showToast(`"${item.title}" ditambahkan ke antrean`, '➕');
+        });
+      }
+
+      // Download to Local Library
+      const dlBtn = tr.querySelector('.btn-online-download');
+      if (dlBtn) {
+        dlBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          downloadOnlineTrack(item, dlBtn);
+        });
+      }
+
+      onlineTableBody.appendChild(tr);
+    });
+  }
+
+  async function downloadOnlineTrack(item, btnElement) {
+    if (btnElement) {
+      btnElement.disabled = true;
+      btnElement.innerHTML = '<span>⏳ Menyimpan...</span>';
+    }
+    showToast(`Mendownload "${item.title}" ke server...`, '📥');
+
+    try {
+      const res = await fetch('api/yt_download.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: item.url || `https://www.youtube.com/watch?v=${item.id}` })
+      });
+      const data = await res.json();
+      if (data.status === 'success' || data.status === 'already_exists') {
+        showToast(`"${item.title}" berhasil disimpan ke Koleksi Lokal! 🎉`, '✓');
+        if (btnElement) {
+          btnElement.innerHTML = '<span>✅ Tersimpan</span>';
+          btnElement.style.borderColor = '#10b981';
+          btnElement.style.color = '#10b981';
+        }
+        if (window.scanLibrary) window.scanLibrary(false);
+      } else {
+        showToast(data.message || 'Gagal mendownload lagu', '⚠️');
+        if (btnElement) {
+          btnElement.disabled = false;
+          btnElement.innerHTML = `<span>Simpan</span>`;
+        }
+      }
+    } catch (err) {
+      console.error('Download error:', err);
+      showToast('Terjadi kesalahan saat mendownload lagu', '⚠️');
+      if (btnElement) {
+        btnElement.disabled = false;
+        btnElement.innerHTML = `<span>Simpan</span>`;
+      }
+    }
+  }
+
+  // Online Search Input Events
+  if (onlineSearchSubmitBtn && onlineSearchInput) {
+    onlineSearchSubmitBtn.addEventListener('click', () => {
+      performOnlineSearch(onlineSearchInput.value);
+    });
+    onlineSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        performOnlineSearch(onlineSearchInput.value);
+      }
+    });
+  }
+
+  // Quick Tag Pill Click Handler
+  if (onlineTagPills) {
+    onlineTagPills.forEach((pill) => {
+      pill.addEventListener('click', () => {
+        const query = pill.dataset.query;
+        if (onlineSearchInput) onlineSearchInput.value = query;
+        performOnlineSearch(query);
+      });
     });
   }
 

@@ -72,6 +72,15 @@
             <span class="nav-text-desktop">Statistik & Wrapped</span>
             <span class="nav-text-mobile">Statistik</span>
           </a>
+          <a href="#" class="nav-item" data-tab="online" title="Cari & streaming jutaan lagu langsung dari YouTube tanpa download">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+            <span class="nav-text-desktop">Cari Online (YouTube)</span>
+            <span class="nav-text-mobile">Online</span>
+          </a>
           <a href="#" class="nav-item" data-tab="offline" title="Lagu yang disimpan ke memori HP/PC untuk diputar tanpa internet">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -425,6 +434,75 @@
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- ==========================================
+             YOUTUBE ONLINE SEARCH & STREAM VIEW
+             ========================================== -->
+        <div id="online-view-wrap" style="display: none;">
+          <!-- Online Search Hero Bar -->
+          <div class="online-search-hero">
+            <div class="online-hero-content">
+              <span class="online-badge">🌐 YOUTUBE AUDIO STREAMING</span>
+              <h2 class="online-title">Cari & Putar Jutaan Lagu Langsung</h2>
+              <p class="online-desc">Streaming audio langsung dari YouTube tanpa download, hemat memori server dengan kualitas prima.</p>
+              
+              <div class="online-search-input-wrap">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="online-search-input" class="online-search-input" placeholder="Ketik judul lagu, penyanyi, atau link YouTube..." />
+                <button type="button" id="online-search-submit-btn" class="btn-primary-play" style="padding: 8px 18px; border-radius: var(--radius-sm); font-size: 0.85rem; white-space: nowrap;">
+                  Cari Lagu
+                </button>
+              </div>
+
+              <!-- Quick Query Tag Pills -->
+              <div class="online-tags-row">
+                <span style="font-size: 0.75rem; color: var(--text-tertiary); font-weight: 600; align-self: center;">Rekomendasi:</span>
+                <button class="online-tag-pill" data-query="Top Hits Indonesia 2026">🔥 Top Hits Indo</button>
+                <button class="online-tag-pill" data-query="Tulus">🎤 Tulus</button>
+                <button class="online-tag-pill" data-query="Nadin Amizah">✨ Nadin Amizah</button>
+                <button class="online-tag-pill" data-query="Acoustic Chill Music">🎸 Acoustic Chill</button>
+                <button class="online-tag-pill" data-query="Lo-Fi Hip Hop Beats">☕ Lo-Fi Beats</button>
+                <button class="online-tag-pill" data-query="Anime OST Official">🎌 Anime OST</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Loading State Indicator -->
+          <div id="online-loading-state" style="display: none; text-align: center; padding: 48px 0;">
+            <div class="sound-waves-indicator" style="justify-content: center; height: 32px; margin-bottom: 12px;">
+              <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Mencari musik online di YouTube...</p>
+          </div>
+
+          <!-- Results Container -->
+          <div id="online-results-container" style="margin-top: 16px;">
+            <table class="song-table" id="online-song-table">
+              <colgroup>
+                <col style="width: 46px;">
+                <col style="width: auto;">
+                <col style="width: 25%;" class="col-album">
+                <col style="width: 140px;">
+                <col style="width: 220px;">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th style="text-align: center;">#</th>
+                  <th>Judul & Channel</th>
+                  <th class="col-album">Sumber</th>
+                  <th>Durasi</th>
+                  <th style="text-align: right; padding-right: 14px;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="online-table-body">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
           </div>
         </div>
 
