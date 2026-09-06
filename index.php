@@ -438,38 +438,64 @@
         </div>
 
         <!-- ==========================================
-             YOUTUBE ONLINE SEARCH & STREAM VIEW
+             YOUTUBE MUSIC EXPLORER & ON-DEMAND STREAM
              ========================================== -->
         <div id="online-view-wrap" style="display: none;">
-          <!-- Online Search Hero Bar -->
-          <div class="online-search-hero">
-            <div class="online-hero-content">
-              <span class="online-badge">🌐 YOUTUBE AUDIO STREAMING</span>
-              <h2 class="online-title">Cari & Putar Jutaan Lagu Langsung</h2>
-              <p class="online-desc">Streaming audio langsung dari YouTube tanpa download, hemat memori server dengan kualitas prima.</p>
-              
-              <div class="online-search-input-wrap">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-                <input type="text" id="online-search-input" class="online-search-input" placeholder="Ketik judul lagu, penyanyi, atau link YouTube..." />
-                <button type="button" id="online-search-submit-btn" class="btn-primary-play" style="padding: 8px 18px; border-radius: var(--radius-sm); font-size: 0.85rem; white-space: nowrap;">
-                  Cari Lagu
-                </button>
-              </div>
+          <!-- YouTube Music Mood & Activity Category Chips -->
+          <div class="ytm-moods-bar">
+            <button class="ytm-mood-chip active" data-query="Top Hits Indonesia 2026">🔥 Top Hits Indo</button>
+            <button class="ytm-mood-chip" data-query="Lagu Santai Chill Indonesia Populer">🧘 Relax & Chill</button>
+            <button class="ytm-mood-chip" data-query="Lofi Hip Hop Chill Beats Study">☕ Lo-Fi & Fokus</button>
+            <button class="ytm-mood-chip" data-query="Lagu Galau Indonesia Populer">💔 Melow / Galau</button>
+            <button class="ytm-mood-chip" data-query="Lagu Akustik Indonesia Terbaik">🎸 Akustik</button>
+            <button class="ytm-mood-chip" data-query="Workout Gym Hype Music 2026">⚡ Workout / Hype</button>
+            <button class="ytm-mood-chip" data-query="Top Global Viral Hits">🌍 Global Hits</button>
+            <button class="ytm-mood-chip" data-query="Anime OST Official Soundtrack">🎌 Anime & J-Pop</button>
+          </div>
 
-              <!-- Quick Query Tag Pills -->
-              <div class="online-tags-row">
-                <span style="font-size: 0.75rem; color: var(--text-tertiary); font-weight: 600; align-self: center;">Rekomendasi:</span>
-                <button class="online-tag-pill" data-query="Top Hits Indonesia 2026">🔥 Top Hits Indo</button>
-                <button class="online-tag-pill" data-query="Tulus">🎤 Tulus</button>
-                <button class="online-tag-pill" data-query="Nadin Amizah">✨ Nadin Amizah</button>
-                <button class="online-tag-pill" data-query="Acoustic Chill Music">🎸 Acoustic Chill</button>
-                <button class="online-tag-pill" data-query="Lo-Fi Hip Hop Beats">☕ Lo-Fi Beats</button>
-                <button class="online-tag-pill" data-query="Anime OST Official">🎌 Anime OST</button>
-              </div>
+          <!-- YouTube Search & View Toggle Header -->
+          <div class="ytm-search-header">
+            <div class="ytm-search-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="online-search-input" class="ytm-search-input" placeholder="Cari jutaan lagu, artis, atau album di YouTube..." />
+              <button type="button" id="online-search-submit-btn" class="btn-primary-play" style="padding: 7px 16px; font-size: 0.82rem; border-radius: var(--radius-sm); white-space: nowrap;">
+                Cari Musik
+              </button>
             </div>
+
+            <!-- View Switcher (Grid vs List) -->
+            <div class="view-toggle" style="flex-shrink: 0;">
+              <button class="view-btn active" id="ytm-view-grid-btn" data-ytm-view="grid" title="Tampilan Grid YouTube Music">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+              </button>
+              <button class="view-btn" id="ytm-view-list-btn" data-ytm-view="list" title="Tampilan Daftar Tabel">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="8" y1="6" x2="21" y2="6"></line>
+                  <line x1="8" y1="12" x2="21" y2="12"></line>
+                  <line x1="8" y1="18" x2="21" y2="18"></line>
+                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Section Heading -->
+          <div class="ytm-section-heading">
+            <div>
+              <span class="ytm-sub-badge">YOUTUBE MUSIC STREAMING</span>
+              <h3 class="ytm-heading-title" id="ytm-heading-title">Pilihan Teratas Untuk Anda</h3>
+            </div>
+            <span class="ytm-count-badge" id="ytm-count-badge">15 Lagu</span>
           </div>
 
           <!-- Loading State Indicator -->
@@ -477,11 +503,16 @@
             <div class="sound-waves-indicator" style="justify-content: center; height: 32px; margin-bottom: 12px;">
               <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
             </div>
-            <p style="color: var(--text-secondary); font-size: 0.9rem;">Mencari musik online di YouTube...</p>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Menghubungkan ke YouTube Music...</p>
           </div>
 
-          <!-- Results Container -->
-          <div id="online-results-container" style="margin-top: 16px;">
+          <!-- YouTube Music Grid Card View (Default) -->
+          <div class="ytm-cards-grid" id="ytm-cards-grid">
+            <!-- Dynamic YouTube Music Cards -->
+          </div>
+
+          <!-- Table View (Alternative) -->
+          <div id="online-results-container" style="display: none; margin-top: 14px;">
             <table class="song-table" id="online-song-table">
               <colgroup>
                 <col style="width: 46px;">
