@@ -8,9 +8,26 @@ class AudioVisualizer {
   constructor(canvasElement) {
     this.canvas = canvasElement;
     this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
-    this.mode = 'bars'; // 'bars', 'wave', 'radial'
+    this.mode = 'bars'; // 'bars', 'wave', 'radial', 'orb', 'matrix'
     this.animationId = null;
     this.isRunning = false;
+
+    // Particle state for Orb mode
+    this.orbParticles = [];
+    for (let i = 0; i < 40; i++) {
+      this.orbParticles.push({
+        angle: Math.random() * Math.PI * 2,
+        dist: 20 + Math.random() * 60,
+        speed: (Math.random() * 0.02 + 0.008) * (Math.random() > 0.5 ? 1 : -1),
+        size: Math.random() * 3 + 1.5,
+        alpha: Math.random() * 0.7 + 0.3,
+        hue: Math.random() > 0.5 ? 210 : 280
+      });
+    }
+
+    // Peak hold physics for Matrix mode
+    this.peakCaps = [];
+    this.peakSpeeds = [];
 
     this.initCanvasSize();
     window.addEventListener('resize', () => this.initCanvasSize());
@@ -73,6 +90,10 @@ class AudioVisualizer {
       this.drawWave();
     } else if (this.mode === 'radial') {
       this.drawRadial();
+    } else if (this.mode === 'orb') {
+      this.drawOrb();
+    } else if (this.mode === 'matrix') {
+      this.drawMatrix();
     }
   }
 
@@ -87,7 +108,6 @@ class AudioVisualizer {
     const maxBarHeight = this.height - 30;
 
     for (let i = 0; i < count; i++) {
-      // Sample logarithmic/nonlinear indices for richer bass/mid representation
       const index = Math.floor(Math.pow(i / count, 1.4) * (data.length * 0.75));
       const value = data[index] || 0;
       const percent = value / 255;
@@ -96,7 +116,6 @@ class AudioVisualizer {
       const x = startX + i * (barWidth + gap);
       const y = this.height - 15 - barHeight;
 
-      // Clean, subtle gradient
       const grad = this.ctx.createLinearGradient(0, y, 0, this.height - 15);
       grad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
       grad.addColorStop(0.5, 'rgba(59, 130, 246, 0.85)');
@@ -176,6 +195,136 @@ class AudioVisualizer {
     }
 
     this.ctx.restore();
+  }
+
+  drawOrb() {
+    const data = window.AudioCore.getFrequencyData();
+    const centerX = this.width / 2;
+    const centerY = this.height / 2;
+
+    const bass = ((data[1] || 0) + (data[2] || 0) + (data[3] || 0)) / (255 * 3);
+    const treble = ((data[20] || 0) + (data[30] || 0)) / (255 * 2);
+
+    const baseRadius = Math.min(centerX, centerY) * 0.28;
+    const currentRadius = baseRadius + bass * 24;
+
+    this.ctx.save();
+    this.ctx.translate(centerX, centerY);
+
+    // Glowing outer aura rings
+    const auraGrad = this.ctx.createRadialGradient(0, 0, currentRadius * 0.5, 0, 0, currentRadius * 1.8);
+    auraGrad.addColorStop(0, `rgba(168, 85, 247, ${0.4 + bass * 0.4})`);
+    auraGrad.addColorStop(0.6, `rgba(59, 130, 246, ${0.2 + bass * 0.3})`);
+    auraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+    this.ctx.fillStyle = auraGrad;
+    this.ctx.beginPath();
+    this.ctx.arc(0, 0, currentRadius * 1.8, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Solid pulsing core
+    const coreGrad = this.ctx.createRadialGradient(0, 0, 0, 0, 0, currentRadius);
+    coreGrad.addColorStop(0, '#ffffff');
+    coreGrad.addColorStop(0.4, '#38bdf8');
+    coreGrad.addColorStop(0.8, '#a855f7');
+    coreGrad.addColorStop(1, '#1e1b4b');
+
+    this.ctx.fillStyle = coreGrad;
+    this.ctx.shadowColor = '#60a5fa';
+    this.ctx.shadowBlur = 15 + bass * 25;
+    this.ctx.beginPath();
+    this.ctx.arc(0, 0, currentRadius, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.shadowBlur = 0;
+
+    // Orbiting particle swarm
+    this.orbParticles.forEach((p) => {
+      p.angle += p.speed * (1 + bass * 2);
+      const dist = currentRadius + p.dist * (0.8 + treble * 0.6);
+      const px = Math.cos(p.angle) * dist;
+      const py = Math.sin(p.angle) * (dist * 0.6); // elliptical perspective
+
+      this.ctx.fillStyle = `hsla(${p.hue}, 90%, 65%, ${p.alpha * (0.5 + bass * 0.5)})`;
+      this.ctx.beginPath();
+      this.ctx.arc(px, py, p.size * (1 + bass * 0.5), 0, Math.PI * 2);
+      this.ctx.fill();
+    });
+
+    this.ctx.restore();
+  }
+
+  drawMatrix() {
+    const data = window.AudioCore.getFrequencyData();
+    const count = 28;
+    const gap = 4;
+    const totalWidth = this.width - 24;
+    const barWidth = Math.max(4, (totalWidth - (count - 1) * gap) / count);
+    const startX = 12;
+    const maxHeight = this.height - 30;
+
+    if (this.peakCaps.length !== count) {
+      this.peakCaps = new Array(count).fill(0);
+      this.peakSpeeds = new Array(count).fill(0);
+    }
+
+    const segmentsCount = 14;
+    const segGap = 2;
+    const segHeight = (maxHeight - (segmentsCount - 1) * segGap) / segmentsCount;
+
+    for (let i = 0; i < count; i++) {
+      const sampleIdx = Math.floor(Math.pow(i / count, 1.3) * (data.length * 0.7));
+      const val = (data[sampleIdx] || 0) / 255;
+      const targetHeight = val * maxHeight;
+
+      // Peak hold calculation with gravity
+      if (targetHeight >= this.peakCaps[i]) {
+        this.peakCaps[i] = targetHeight;
+        this.peakSpeeds[i] = 0;
+      } else {
+        this.peakSpeeds[i] += 0.25;
+        this.peakCaps[i] = Math.max(0, this.peakCaps[i] - this.peakSpeeds[i]);
+      }
+
+      const activeSegments = Math.round(val * segmentsCount);
+      const x = startX + i * (barWidth + gap);
+
+      // Draw LED Segments
+      for (let s = 0; s < segmentsCount; s++) {
+        const segY = this.height - 15 - (s + 1) * (segHeight + segGap);
+        const isActive = s < activeSegments;
+
+        if (isActive) {
+          // Color grading: Green -> Yellow -> Neon Cyan/Pink on top
+          let color = '#10b981';
+          if (s > segmentsCount * 0.75) {
+            color = '#ec4899';
+          } else if (s > segmentsCount * 0.5) {
+            color = '#38bdf8';
+          } else if (s > segmentsCount * 0.3) {
+            color = '#34d399';
+          }
+          this.ctx.fillStyle = color;
+        } else {
+          this.ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+        }
+
+        this.ctx.beginPath();
+        this.ctx.roundRect(x, segY, barWidth, segHeight, 1);
+        this.ctx.fill();
+      }
+
+      // Draw Peak Cap
+      if (this.peakCaps[i] > 4) {
+        const capY = this.height - 15 - this.peakCaps[i];
+        this.ctx.fillStyle = '#f43f5e';
+        this.ctx.shadowColor = '#f43f5e';
+        this.ctx.shadowBlur = 4;
+        this.ctx.beginPath();
+        this.ctx.roundRect(x, capY, barWidth, 3, 1);
+        this.ctx.fill();
+        this.ctx.shadowBlur = 0;
+      }
+    }
   }
 }
 

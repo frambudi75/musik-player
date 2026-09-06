@@ -581,6 +581,8 @@
               <span class="vis-mode-chip active" data-mode="bars">Spectrum Bars</span>
               <span class="vis-mode-chip" data-mode="wave">Fluid Wave</span>
               <span class="vis-mode-chip" data-mode="radial">Radial Ring</span>
+              <span class="vis-mode-chip" data-mode="orb">Neon Orb 🔮</span>
+              <span class="vis-mode-chip" data-mode="matrix">Cyber Matrix ⚡</span>
             </div>
           </div>
 
@@ -898,12 +900,16 @@
         <div class="eq-presets-bar">
           <span class="eq-preset-chip active" data-preset="flat">Flat</span>
           <span class="eq-preset-chip" data-preset="bass_boost">Bass Boost</span>
-          <span class="eq-preset-chip" data-preset="electronic">Electronic</span>
+          <span class="eq-preset-chip" data-preset="edm">EDM / Dance 🎧</span>
+          <span class="eq-preset-chip" data-preset="vocal">Vocal Clarity 🎙️</span>
+          <span class="eq-preset-chip" data-preset="acoustic">Acoustic Warmth 🎸</span>
           <span class="eq-preset-chip" data-preset="rock">Rock</span>
           <span class="eq-preset-chip" data-preset="pop">Pop</span>
+          <span class="eq-preset-chip" data-preset="electronic">Electronic</span>
           <span class="eq-preset-chip" data-preset="jazz">Jazz</span>
-          <span class="eq-preset-chip" data-preset="vocal">Vocal</span>
-          <span class="eq-preset-chip" data-preset="acoustic">Acoustic</span>
+          <span class="eq-preset-chip" data-preset="classical">Classical 🎻</span>
+          <span class="eq-preset-chip" data-preset="podcast">Podcast / Speech 🗣️</span>
+          <span class="eq-preset-chip" data-preset="gaming">Gaming & Cine 🎮</span>
         </div>
 
         <!-- 10 Vertical EQ Sliders -->

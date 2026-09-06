@@ -1399,25 +1399,34 @@ html, body {
 
 .visualizer-modes-bar {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
   margin-top: 14px;
 }
 
 .vis-mode-chip {
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: var(--radius-full);
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   font-size: 0.75rem;
+  font-weight: 600;
   color: var(--text-secondary);
   cursor: pointer;
   transition: var(--transition-smooth);
 }
 
-.vis-mode-chip.active {
-  background: var(--bg-surface-elevated);
+.vis-mode-chip:hover {
+  background: var(--bg-surface-hover);
   color: var(--text-primary);
+  border-color: var(--border-medium);
+}
+
+.vis-mode-chip.active {
+  background: var(--accent-subtle);
+  color: var(--accent-primary);
   border-color: var(--accent-primary);
+  box-shadow: 0 0 10px var(--accent-subtle);
 }
 
 /* Up Next Queue */
