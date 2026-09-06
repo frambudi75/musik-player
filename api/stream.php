@@ -33,32 +33,144 @@ if (!preg_match('/^[a-zA-Z0-9_\-]{6,15}$/', $videoId)) {
     exit;
 }
 
+/**
+ * Detect available Python 3 binary
+ */
+function getPythonCommand() {
+    static $cmd = null;
+    if ($cmd !== null) return $cmd;
+
+    $candidates = [
+        'python3',
+        'python',
+        '/usr/bin/python3',
+        '/usr/local/bin/python3',
+        '/www/server/pyenv/bin/python3',
+        '/www/server/pyenv/bin/python',
+        '/bin/python3'
+    ];
+
+    if (function_exists('exec')) {
+        foreach ($candidates as $c) {
+            $out = [];
+            $code = 0;
+            @exec("$c --version 2>&1", $out, $code);
+            if ($code === 0 && !empty($out)) {
+                $ver = implode(' ', $out);
+                if (stripos($ver, 'Python') !== false) {
+                    $cmd = $c;
+                    return $cmd;
+                }
+            }
+        }
+    }
+
+    $cmd = (DIRECTORY_SEPARATOR === '\\') ? 'python' : 'python3';
+    return $cmd;
+}
+
+/**
+ * Fallback to Invidious audio stream if Python yt_dlp is not available
+ */
+function purePhpGetStreamData($videoId) {
+    $invidiousInstances = [
+        'https://invidious.nerdvpn.de',
+        'https://inv.nadeko.net',
+        'https://invidious.drgns.space',
+        'https://vid.priv.au'
+    ];
+
+    foreach ($invidiousInstances as $instance) {
+        $url = $instance . '/api/v1/videos/' . urlencode($videoId);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        $resp = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode === 200 && $resp) {
+            $data = json_decode($resp, true);
+            if ($data && !empty($data['adaptiveFormats'])) {
+                // Find best audio format
+                $bestAudio = null;
+                $highestBitrate = 0;
+                foreach ($data['adaptiveFormats'] as $fmt) {
+                    $type = $fmt['type'] ?? '';
+                    if (stripos($type, 'audio') !== false && !empty($fmt['url'])) {
+                        $bitrate = intval($fmt['bitrate'] ?? 0);
+                        if ($bitrate > $highestBitrate) {
+                            $highestBitrate = $bitrate;
+                            $bestAudio = $fmt;
+                        }
+                    }
+                }
+
+                if ($bestAudio && !empty($bestAudio['url'])) {
+                    $ext = (stripos($bestAudio['type'], 'webm') !== false) ? 'webm' : 'm4a';
+                    return [
+                        'status' => 'success',
+                        'id' => $videoId,
+                        'title' => $data['title'] ?? 'YouTube Audio',
+                        'artist' => $data['author'] ?? 'YouTube Artist',
+                        'duration' => intval($data['lengthSeconds'] ?? 0),
+                        'stream_url' => $bestAudio['url'],
+                        'ext' => $ext
+                    ];
+                }
+            }
+        }
+    }
+
+    return null;
+}
+
 // 1. Check Stream URL Cache (TTL 4 hours = 14400s)
 $cacheKey = 'yt_stream_' . $videoId;
 $streamData = AuraCache::get($cacheKey);
 
 if (!$streamData || empty($streamData['stream_url'])) {
-    $pythonScript = __DIR__ . DIRECTORY_SEPARATOR . 'stream_extractor.py';
-    $cmd = sprintf('python %s stream %s', escapeshellarg($pythonScript), escapeshellarg($videoId));
+    $extracted = null;
 
-    $output = [];
-    $returnCode = 0;
-    exec($cmd, $output, $returnCode);
+    // Try Python yt_dlp extractor
+    if (function_exists('exec')) {
+        $py = getPythonCommand();
+        $pythonScript = __DIR__ . DIRECTORY_SEPARATOR . 'stream_extractor.py';
+        $cmd = sprintf('%s %s stream %s', $py, escapeshellarg($pythonScript), escapeshellarg($videoId));
 
-    $rawJson = implode("\n", $output);
-    $data = json_decode($rawJson, true);
+        $output = [];
+        $returnCode = 0;
+        @exec($cmd, $output, $returnCode);
 
-    if ($returnCode !== 0 || !$data || !isset($data['status']) || $data['status'] !== 'success' || empty($data['stream_url'])) {
+        if ($returnCode === 0 && !empty($output)) {
+            $rawJson = implode("\n", $output);
+            $data = json_decode($rawJson, true);
+            if ($data && isset($data['status']) && $data['status'] === 'success' && !empty($data['stream_url'])) {
+                $extracted = $data;
+            }
+        }
+    }
+
+    // If Python failed, try pure PHP stream resolver
+    if (!$extracted) {
+        $extracted = purePhpGetStreamData($videoId);
+    }
+
+    if (!$extracted || empty($extracted['stream_url'])) {
         header('HTTP/1.1 502 Bad Gateway');
         header('Content-Type: application/json');
         echo json_encode([
             'status' => 'error',
-            'message' => $data['message'] ?? 'Gagal mengekstrak stream audio dari YouTube.'
+            'message' => 'Gagal mengekstrak stream audio dari YouTube. Pastikan server memiliki koneksi internet dan modul python / yt-dlp.'
         ]);
         exit;
     }
 
-    $streamData = $data;
+    $streamData = $extracted;
     // Cache stream URL for 4 hours (14400s)
     AuraCache::set($cacheKey, $streamData, 14400);
 }
