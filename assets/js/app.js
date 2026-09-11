@@ -662,36 +662,57 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Render Statistics View
+  // Render Statistics View & Wrapped
   function renderStatsView() {
     const summary = window.PlaylistManager.getStatsSummary();
     const statMinutesEl = document.getElementById('stat-total-minutes');
     const statPlaysEl = document.getElementById('stat-total-plays');
     const statArtistsEl = document.getElementById('stat-total-artists');
+    const statHoursSubEl = document.getElementById('stat-total-hours-sub');
+    const statsPersonaBadge = document.getElementById('stats-persona-badge');
     const topTracksContainer = document.getElementById('top-tracks-container');
     const topArtistsContainer = document.getElementById('top-artists-container');
 
-    if (statMinutesEl) statMinutesEl.textContent = summary.totalMinutes;
-    if (statPlaysEl) statPlaysEl.textContent = summary.totalPlays;
+    if (statMinutesEl) statMinutesEl.textContent = summary.totalMinutes.toLocaleString();
+    if (statPlaysEl) statPlaysEl.textContent = summary.totalPlays.toLocaleString();
     if (statArtistsEl) statArtistsEl.textContent = summary.topArtists.length;
+    
+    if (statHoursSubEl) {
+      const hours = Math.floor(summary.totalMinutes / 60);
+      const mins = summary.totalMinutes % 60;
+      statHoursSubEl.textContent = hours > 0 ? `~${hours} Jam ${mins > 0 ? mins + ' Menit' : ''} Pemutaran` : `~${mins} Menit Pemutaran`;
+    }
+
+    if (statsPersonaBadge) {
+      statsPersonaBadge.textContent = summary.persona || '🎧 Penikmat Musik Aktif';
+    }
 
     if (topTracksContainer) {
       topTracksContainer.innerHTML = '';
       if (summary.topTracks.length === 0) {
-        topTracksContainer.innerHTML = `<div style="color: var(--text-tertiary); font-size: 0.85rem;">Belum ada riwayat pemutaran. Putar lagu untuk melihat statistik Anda!</div>`;
+        topTracksContainer.innerHTML = `<div style="color: var(--text-tertiary); font-size: 0.85rem; padding: 12px 0;">Belum ada riwayat pemutaran. Putar lagu untuk melihat statistik Anda!</div>`;
       } else {
         summary.topTracks.forEach((item, i) => {
           const row = document.createElement('div');
           row.className = 'top-track-card';
+          
+          let rankClass = 'rank-normal';
+          if (i === 0) rankClass = 'rank-gold';
+          else if (i === 1) rankClass = 'rank-silver';
+          else if (i === 2) rankClass = 'rank-bronze';
+
+          const coverSrc = item.song.cover || 'assets/sample_covers/placeholder.svg';
+
           row.innerHTML = `
             <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
-              <span style="font-family: var(--font-mono); font-weight: 700; color: ${i === 0 ? 'var(--accent-amber)' : 'var(--text-tertiary)'}; font-size: 0.95rem; width: 22px;">#${i + 1}</span>
+              <span class="top-rank-pill ${rankClass}">#${i + 1}</span>
+              <img class="top-track-cover-thumb" src="${escapeHTML(coverSrc)}" alt="Cover" onerror="this.src='assets/sample_covers/placeholder.svg'" />
               <div style="display: flex; flex-direction: column; min-width: 0;">
-                <span style="font-weight: 600; color: var(--text-primary); font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(item.song.title)}</span>
+                <span style="font-weight: 700; color: var(--text-primary); font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(item.song.title)}</span>
                 <span style="font-size: 0.75rem; color: var(--text-secondary);">${escapeHTML(item.song.artist)}</span>
               </div>
             </div>
-            <span style="font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; color: var(--accent-primary); background: var(--accent-subtle); padding: 4px 8px; border-radius: var(--radius-full);">${item.count}x</span>
+            <span style="font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; color: var(--accent-primary); background: var(--accent-subtle); padding: 4px 10px; border-radius: var(--radius-full);">${item.count}x</span>
           `;
           row.onclick = () => {
             const track = window.PlaylistManager.getSongById(item.id);
@@ -705,19 +726,541 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (topArtistsContainer) {
       topArtistsContainer.innerHTML = '';
       if (summary.topArtists.length === 0) {
-        topArtistsContainer.innerHTML = `<div style="color: var(--text-tertiary); font-size: 0.85rem;">Belum ada data artis.</div>`;
+        topArtistsContainer.innerHTML = `<div style="color: var(--text-tertiary); font-size: 0.85rem; padding: 12px 0;">Belum ada data artis.</div>`;
       } else {
         summary.topArtists.forEach((item, i) => {
           const row = document.createElement('div');
           row.className = 'top-artist-item';
           row.innerHTML = `
-            <span style="font-weight: 600; color: var(--text-primary); font-size: 0.88rem;">${escapeHTML(item.name)}</span>
-            <span style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-secondary);">${item.count} lagu diputar</span>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 700; color: ${i === 0 ? 'var(--accent-amber)' : 'var(--text-tertiary)'};">#${i + 1}</span>
+              <span style="font-weight: 600; color: var(--text-primary); font-size: 0.88rem;">${escapeHTML(item.name)}</span>
+            </div>
+            <span style="font-family: var(--font-mono); font-size: 0.76rem; color: var(--accent-amber); background: rgba(245, 158, 11, 0.12); padding: 3px 8px; border-radius: var(--radius-full);">${item.count} lagu diputar</span>
           `;
           topArtistsContainer.appendChild(row);
         });
       }
     }
+  }
+
+  // Wrapped WhatsApp Status / Story Generator Module
+  let currentWrappedTheme = 'neon';
+  let currentWrappedAspect = '9:16';
+
+  const WRAPPED_THEMES = {
+    neon: {
+      bgStart: '#0d0b1a',
+      bgEnd: '#1e1138',
+      orb1: 'rgba(168, 85, 247, 0.45)',
+      orb2: 'rgba(59, 130, 246, 0.35)',
+      accent: '#c084fc',
+      accent2: '#60a5fa',
+      cardBg: 'rgba(255, 255, 255, 0.05)',
+      cardBorder: 'rgba(168, 85, 247, 0.4)',
+      textPrimary: '#ffffff',
+      textSecondary: '#cbd5e1'
+    },
+    aurora: {
+      bgStart: '#041618',
+      bgEnd: '#092d2b',
+      orb1: 'rgba(16, 185, 129, 0.45)',
+      orb2: 'rgba(6, 182, 212, 0.35)',
+      accent: '#34d399',
+      accent2: '#22d3ee',
+      cardBg: 'rgba(255, 255, 255, 0.05)',
+      cardBorder: 'rgba(16, 185, 129, 0.4)',
+      textPrimary: '#ffffff',
+      textSecondary: '#a7f3d0'
+    },
+    sunset: {
+      bgStart: '#1a0c16',
+      bgEnd: '#2d0f22',
+      orb1: 'rgba(249, 115, 22, 0.45)',
+      orb2: 'rgba(236, 72, 153, 0.35)',
+      accent: '#fb923c',
+      accent2: '#f472b6',
+      cardBg: 'rgba(255, 255, 255, 0.05)',
+      cardBorder: 'rgba(249, 115, 22, 0.4)',
+      textPrimary: '#ffffff',
+      textSecondary: '#fed7aa'
+    },
+    midnight: {
+      bgStart: '#090d16',
+      bgEnd: '#111827',
+      orb1: 'rgba(51, 65, 85, 0.5)',
+      orb2: 'rgba(30, 41, 59, 0.4)',
+      accent: '#94a3b8',
+      accent2: '#60a5fa',
+      cardBg: 'rgba(255, 255, 255, 0.04)',
+      cardBorder: 'rgba(255, 255, 255, 0.15)',
+      textPrimary: '#ffffff',
+      textSecondary: '#94a3b8'
+    },
+    synthwave: {
+      bgStart: '#150826',
+      bgEnd: '#290d3d',
+      orb1: 'rgba(236, 72, 153, 0.5)',
+      orb2: 'rgba(139, 92, 246, 0.4)',
+      accent: '#f472b6',
+      accent2: '#c084fc',
+      cardBg: 'rgba(255, 255, 255, 0.06)',
+      cardBorder: 'rgba(236, 72, 153, 0.4)',
+      textPrimary: '#ffffff',
+      textSecondary: '#fbcfe8'
+    }
+  };
+
+  async function loadCoverImageSafe(src) {
+    if (!src) return null;
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+  }
+
+  // Rounded rectangle helper
+  function drawRoundRect(ctx, x, y, width, height, radius, fill, stroke) {
+    ctx.save();
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(x, y, width, height, radius);
+    } else {
+      ctx.rect(x, y, width, height);
+    }
+    if (fill) ctx.fill();
+    if (stroke) ctx.stroke();
+    ctx.restore();
+  }
+
+  // Truncate text on canvas
+  function truncateCanvasText(ctx, text, maxWidth) {
+    if (!text) return '';
+    if (ctx.measureText(text).width <= maxWidth) return text;
+    let truncated = text;
+    while (truncated.length > 0 && ctx.measureText(truncated + '...').width > maxWidth) {
+      truncated = truncated.slice(0, -1);
+    }
+    return truncated + '...';
+  }
+
+  async function drawWrappedStoryCard() {
+    const canvas = document.getElementById('wrapped-story-canvas');
+    const loadingEl = document.getElementById('story-preview-loading');
+    if (!canvas) return;
+
+    if (loadingEl) loadingEl.style.display = 'flex';
+
+    const isStory = currentWrappedAspect === '9:16';
+    const width = 1080;
+    const height = isStory ? 1920 : 1080;
+
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext('2d');
+    const theme = WRAPPED_THEMES[currentWrappedTheme] || WRAPPED_THEMES.neon;
+    const summary = window.PlaylistManager.getStatsSummary();
+
+    // 1. Background Gradient
+    const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+    bgGrad.addColorStop(0, theme.bgStart);
+    bgGrad.addColorStop(1, theme.bgEnd);
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, width, height);
+
+    // 2. Ambient Glowing Orbs
+    const orbGrad1 = ctx.createRadialGradient(width * 0.85, height * 0.15, 20, width * 0.85, height * 0.15, 450);
+    orbGrad1.addColorStop(0, theme.orb1);
+    orbGrad1.addColorStop(1, 'transparent');
+    ctx.fillStyle = orbGrad1;
+    ctx.fillRect(0, 0, width, height);
+
+    const orbGrad2 = ctx.createRadialGradient(width * 0.15, height * 0.85, 20, width * 0.15, height * 0.85, 500);
+    orbGrad2.addColorStop(0, theme.orb2);
+    orbGrad2.addColorStop(1, 'transparent');
+    ctx.fillStyle = orbGrad2;
+    ctx.fillRect(0, 0, width, height);
+
+    // 3. Subtle grid lines / acoustic motif
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+    ctx.lineWidth = 2;
+    for (let x = 60; x < width; x += 120) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+    for (let y = 60; y < height; y += 120) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+
+    // 4. Header Branding
+    let curY = isStory ? 110 : 80;
+
+    // Badge: KASETKU WRAPPED 2026
+    ctx.fillStyle = theme.cardBg;
+    ctx.strokeStyle = theme.cardBorder;
+    ctx.lineWidth = 3;
+    drawRoundRect(ctx, 80, curY, width - 160, 80, 40, true, true);
+
+    ctx.font = 'bold 34px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = theme.textPrimary;
+    ctx.textAlign = 'left';
+    ctx.fillText('📼  KASETKU', 115, curY + 52);
+
+    ctx.font = 'bold 30px "SF Mono", Consolas, monospace';
+    ctx.fillStyle = theme.accent;
+    ctx.textAlign = 'right';
+    ctx.fillText('• 2026 WRAPPED', width - 115, curY + 52);
+
+    curY += isStory ? 130 : 100;
+
+    // 5. Title & Persona Badge
+    ctx.textAlign = 'left';
+    ctx.font = '800 52px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('Kilas Balik Musikmu', 80, curY);
+
+    curY += 56;
+    // Persona Pill
+    const personaText = summary.persona || '🎧 Penikmat Musik Aktif';
+    ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    const personaWidth = ctx.measureText(personaText).width + 50;
+    
+    ctx.fillStyle = 'rgba(168, 85, 247, 0.25)';
+    ctx.strokeStyle = theme.accent;
+    ctx.lineWidth = 2;
+    drawRoundRect(ctx, 80, curY, personaWidth, 54, 27, true, true);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(personaText, 105, curY + 37);
+
+    curY += isStory ? 95 : 75;
+
+    // 6. Top #1 Favorite Track Hero Card
+    const top1 = summary.topTracks.length > 0 ? summary.topTracks[0] : null;
+    const heroCardHeight = isStory ? 280 : 200;
+    
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.65)';
+    ctx.strokeStyle = theme.accent;
+    ctx.lineWidth = 3;
+    drawRoundRect(ctx, 80, curY, width - 160, heroCardHeight, 28, true, true);
+
+    // Draw Top 1 Cover Art
+    const coverSize = isStory ? 210 : 140;
+    const coverX = 115;
+    const coverY = curY + (heroCardHeight - coverSize) / 2;
+
+    let coverImg = null;
+    if (top1 && top1.song && top1.song.cover) {
+      coverImg = await loadCoverImageSafe(top1.song.cover);
+    }
+
+    if (coverImg) {
+      ctx.save();
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(coverX, coverY, coverSize, coverSize, 20);
+      else ctx.rect(coverX, coverY, coverSize, coverSize);
+      ctx.clip();
+      ctx.drawImage(coverImg, coverX, coverY, coverSize, coverSize);
+      ctx.restore();
+    } else {
+      // Fallback disc cover
+      const discGrad = ctx.createLinearGradient(coverX, coverY, coverX + coverSize, coverY + coverSize);
+      discGrad.addColorStop(0, '#a855f7');
+      discGrad.addColorStop(1, '#3b82f6');
+      ctx.fillStyle = discGrad;
+      drawRoundRect(ctx, coverX, coverY, coverSize, coverSize, 20, true, false);
+      ctx.font = '70px sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.fillText('🎵', coverX + coverSize / 2, coverY + coverSize / 2 + 25);
+    }
+
+    // Top 1 Info Text
+    const textX = coverX + coverSize + 30;
+    const maxInfoWidth = width - 160 - coverSize - 80;
+
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = theme.accent;
+    ctx.fillText('👑  LAGU PALING SERING DIPUTAR', textX, curY + (isStory ? 65 : 45));
+
+    ctx.font = '800 38px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    const top1Title = top1 ? top1.song.title : 'Belum Ada Lagu';
+    ctx.fillText(truncateCanvasText(ctx, top1Title, maxInfoWidth), textX, curY + (isStory ? 125 : 95));
+
+    ctx.font = '600 28px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = theme.textSecondary;
+    const top1Artist = top1 ? top1.song.artist : '-';
+    ctx.fillText(truncateCanvasText(ctx, top1Artist, maxInfoWidth), textX, curY + (isStory ? 175 : 135));
+
+    if (top1) {
+      ctx.font = 'bold 24px "SF Mono", Consolas, monospace';
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillText(`🔥 Diputar ${top1.count}x`, textX, curY + (isStory ? 225 : 175));
+    }
+
+    curY += heroCardHeight + (isStory ? 45 : 30);
+
+    // 7. Top 2 - Top 5 Tracks (Story Mode)
+    if (isStory) {
+      ctx.font = '800 32px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('🔥  Lagu Favorit Lainnya', 80, curY);
+
+      curY += 25;
+
+      const otherTracks = summary.topTracks.slice(1, 5);
+      const rowHeight = 82;
+
+      for (let i = 0; i < 4; i++) {
+        const trk = otherTracks[i];
+        const rowY = curY + (i * (rowHeight + 12));
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.lineWidth = 1.5;
+        drawRoundRect(ctx, 80, rowY, width - 160, rowHeight, 16, true, true);
+
+        // Rank Badge
+        ctx.font = 'bold 28px "SF Mono", Consolas, monospace';
+        ctx.fillStyle = i === 0 ? '#e2e8f0' : (i === 1 ? '#d97706' : theme.accent2);
+        ctx.fillText(`#${i + 2}`, 110, rowY + 52);
+
+        if (trk) {
+          ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(truncateCanvasText(ctx, trk.song.title, 560), 185, rowY + 42);
+
+          ctx.font = '500 22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          ctx.fillStyle = theme.textSecondary;
+          ctx.fillText(truncateCanvasText(ctx, trk.song.artist, 560), 185, rowY + 70);
+
+          ctx.font = 'bold 24px "SF Mono", Consolas, monospace';
+          ctx.fillStyle = theme.accent;
+          ctx.textAlign = 'right';
+          ctx.fillText(`${trk.count}x`, width - 115, rowY + 52);
+          ctx.textAlign = 'left';
+        } else {
+          ctx.font = 'italic 24px sans-serif';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+          ctx.fillText('— Kosong —', 185, rowY + 52);
+        }
+      }
+
+      curY += (4 * (rowHeight + 12)) + 30;
+    }
+
+    // 8. Bottom 3 Stats Highlight Bubbles
+    const colWidth = (width - 160 - 32) / 3;
+    const statHeight = isStory ? 160 : 130;
+
+    const statsData = [
+      { icon: '⏱️', val: `${summary.totalMinutes}`, unit: 'Menit Diputar', sub: summary.formattedTime },
+      { icon: '🎵', val: `${summary.totalPlays}`, unit: 'Total Putar', sub: 'Lagu Selesai' },
+      { icon: '🎙️', val: `${summary.topArtists.length}`, unit: 'Artis Unik', sub: summary.topArtists[0]?.name || 'Variatif' }
+    ];
+
+    statsData.forEach((st, idx) => {
+      const cardX = 80 + idx * (colWidth + 16);
+      
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.strokeStyle = theme.cardBorder;
+      ctx.lineWidth = 2;
+      drawRoundRect(ctx, cardX, curY, colWidth, statHeight, 20, true, true);
+
+      ctx.font = '34px sans-serif';
+      ctx.fillText(st.icon, cardX + 24, curY + (isStory ? 56 : 46));
+
+      ctx.font = '800 38px "SF Mono", Consolas, monospace';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(st.val, cardX + 75, curY + (isStory ? 58 : 48));
+
+      ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = theme.accent;
+      ctx.fillText(st.unit, cardX + 24, curY + (isStory ? 104 : 86));
+
+      ctx.font = '500 18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = theme.textSecondary;
+      ctx.fillText(truncateCanvasText(ctx, st.sub, colWidth - 40), cardX + 24, curY + (isStory ? 136 : 112));
+    });
+
+    curY += statHeight + (isStory ? 50 : 35);
+
+    // 9. Footer Waveform & Watermark
+    // Waveform bars
+    const waveCount = 38;
+    const waveWidth = 8;
+    const waveGap = 12;
+    const totalWaveWidth = waveCount * (waveWidth + waveGap);
+    const startWaveX = (width - totalWaveWidth) / 2;
+
+    ctx.fillStyle = theme.accent;
+    for (let w = 0; w < waveCount; w++) {
+      const barH = 12 + Math.abs(Math.sin(w * 0.35)) * 36;
+      const bx = startWaveX + w * (waveWidth + waveGap);
+      const by = isStory ? (height - 150 - barH / 2) : (curY + 20 - barH / 2);
+      ctx.globalAlpha = 0.5 + Math.sin(w * 0.35) * 0.4;
+      drawRoundRect(ctx, bx, by, waveWidth, barH, 4, true, false);
+    }
+    ctx.globalAlpha = 1.0;
+
+    // Footer Text
+    ctx.textAlign = 'center';
+    ctx.font = '600 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    const footerY = isStory ? height - 70 : height - 35;
+    ctx.fillText('Dengarkan Musikmu di KasetKu Music Player • Audio Hub', width / 2, footerY);
+
+    if (loadingEl) loadingEl.style.display = 'none';
+  }
+
+  // Setup Wrapped Story Modal Event Handlers
+  const wrappedStoryModal = document.getElementById('wrapped-story-modal');
+  const wrappedStoryCloseBtn = document.getElementById('wrapped-story-close-btn');
+  const openWrappedStoryBtn = document.getElementById('open-wrapped-story-btn');
+  const quickDownloadCardBtn = document.getElementById('quick-download-card-btn');
+  const storyPreviewContainer = document.getElementById('story-preview-container');
+
+  if (openWrappedStoryBtn) {
+    openWrappedStoryBtn.addEventListener('click', () => {
+      if (wrappedStoryModal) {
+        wrappedStoryModal.classList.add('open');
+        drawWrappedStoryCard();
+      }
+    });
+  }
+
+  if (quickDownloadCardBtn) {
+    quickDownloadCardBtn.addEventListener('click', async () => {
+      showToast('Membuat Card HD...', '📸');
+      await drawWrappedStoryCard();
+      downloadWrappedStoryPNG();
+    });
+  }
+
+  if (wrappedStoryCloseBtn) {
+    wrappedStoryCloseBtn.addEventListener('click', () => {
+      if (wrappedStoryModal) wrappedStoryModal.classList.remove('open');
+    });
+  }
+
+  if (wrappedStoryModal) {
+    wrappedStoryModal.addEventListener('click', (e) => {
+      if (e.target === wrappedStoryModal) wrappedStoryModal.classList.remove('open');
+    });
+  }
+
+  // Theme chips selector
+  document.querySelectorAll('.theme-chip').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.theme-chip').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentWrappedTheme = btn.dataset.theme || 'neon';
+      drawWrappedStoryCard();
+    });
+  });
+
+  // Format toggle selector
+  document.querySelectorAll('.format-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.format-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentWrappedAspect = btn.dataset.aspect || '9:16';
+      if (storyPreviewContainer) {
+        if (currentWrappedAspect === '1:1') {
+          storyPreviewContainer.classList.add('aspect-square');
+        } else {
+          storyPreviewContainer.classList.remove('aspect-square');
+        }
+      }
+      drawWrappedStoryCard();
+    });
+  });
+
+  function downloadWrappedStoryPNG() {
+    const canvas = document.getElementById('wrapped-story-canvas');
+    if (!canvas) return;
+    try {
+      const link = document.createElement('a');
+      link.download = `KasetKu-Wrapped-2026-${currentWrappedTheme}-${currentWrappedAspect.replace(':', 'x')}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast('Card Story berhasil di-download! Siap buat Status WA ✨', '🎉');
+    } catch (err) {
+      console.error('Download card error:', err);
+      showToast('Gagal mengunduh gambar', '⚠️');
+    }
+  }
+
+  const btnDownloadPng = document.getElementById('btn-download-story-png');
+  if (btnDownloadPng) btnDownloadPng.addEventListener('click', downloadWrappedStoryPNG);
+
+  const btnCopyClip = document.getElementById('btn-copy-story-img');
+  if (btnCopyClip) {
+    btnCopyClip.addEventListener('click', async () => {
+      const canvas = document.getElementById('wrapped-story-canvas');
+      if (!canvas) return;
+      try {
+        canvas.toBlob(async (blob) => {
+          if (!blob) return;
+          if (navigator.clipboard && navigator.clipboard.write) {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]);
+            showToast('Gambar Story tersalin ke clipboard! Tempel langsung di WhatsApp 📋', '✅');
+          } else {
+            downloadWrappedStoryPNG();
+          }
+        }, 'image/png');
+      } catch (err) {
+        console.error('Copy clipboard error:', err);
+        downloadWrappedStoryPNG();
+      }
+    });
+  }
+
+  const btnShareWa = document.getElementById('btn-share-story-wa');
+  if (btnShareWa) {
+    btnShareWa.addEventListener('click', async () => {
+      const canvas = document.getElementById('wrapped-story-canvas');
+      if (!canvas) return;
+      try {
+        canvas.toBlob(async (blob) => {
+          if (!blob) return;
+          const file = new File([blob], 'KasetKu-Wrapped-2026.png', { type: 'image/png' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: 'KasetKu Wrapped 2026',
+              text: 'Lihat kilas balik musik KasetKu saya!'
+            });
+            showToast('Berhasil membuka menu share Status/Story! 🚀', '✨');
+          } else {
+            // Copy image and open WhatsApp share intent
+            if (navigator.clipboard && navigator.clipboard.write) {
+              await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+              showToast('Gambar tersalin! Buka Status WhatsApp lalu tempel gambar.', '📲');
+            } else {
+              downloadWrappedStoryPNG();
+            }
+            window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent('Lihat Kilas Balik Musik KasetKu 2026 saya! 📼✨'), '_blank');
+          }
+        }, 'image/png');
+      } catch (err) {
+        console.error('Share error:', err);
+        downloadWrappedStoryPNG();
+      }
+    });
   }
 
   // Render Current Tab Content

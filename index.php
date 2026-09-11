@@ -392,31 +392,85 @@
         </div>
 
         <!-- Statistics & Wrapped View (Hidden by default) -->
-        <div id="stats-view-wrap" style="display: none;">
-          <div class="stats-overview-grid">
-            <div class="stat-card">
-              <span class="stat-num" id="stat-total-minutes">0</span>
-              <span class="stat-label">Menit Didengarkan</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-num" id="stat-total-plays">0</span>
-              <span class="stat-label">Total Pemutaran Lagu</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-num" id="stat-total-artists">0</span>
-              <span class="stat-label">Artis Berbeda</span>
+        <div id="stats-view-wrap" style="display: none; width: 100%;">
+          
+          <!-- Wrapped 2026 Showcase Hero Banner -->
+          <div class="wrapped-hero-banner">
+            <div class="wrapped-hero-glow"></div>
+            <div class="wrapped-hero-content">
+              <div class="wrapped-hero-badge">
+                <span class="badge-sparkle">✨</span>
+                <span>KASETKU WRAPPED 2026</span>
+                <span class="stats-persona-pill" id="stats-persona-badge">🎧 Penikmat Musik Aktif</span>
+              </div>
+              <h2 class="wrapped-hero-title">Kilas Balik Musik & Kebiasaan Mendengarkanmu</h2>
+              <p class="wrapped-hero-desc">Lihat rangkuman waktu putar, lagu yang paling sering kamu ulang, dan artis favoritmu sepanjang tahun.</p>
+              
+              <div class="wrapped-hero-actions">
+                <button id="open-wrapped-story-btn" class="btn-wrapped-share">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                  </svg>
+                  <span>📸 Buat Status WA / Story</span>
+                  <span class="btn-shine"></span>
+                </button>
+                <button id="quick-download-card-btn" class="btn-wrapped-outline">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  <span>Download Card (PNG)</span>
+                </button>
+              </div>
             </div>
           </div>
 
+          <!-- 3 Highlight Metric Cards -->
+          <div class="stats-overview-grid">
+            <div class="stat-card stat-card-purple">
+              <div class="stat-card-icon">⏱️</div>
+              <div class="stat-card-info">
+                <span class="stat-num" id="stat-total-minutes">0</span>
+                <span class="stat-label">Menit Didengarkan</span>
+                <span class="stat-subtext" id="stat-total-hours-sub">~0 Jam Pemutaran</span>
+              </div>
+            </div>
+            <div class="stat-card stat-card-blue">
+              <div class="stat-card-icon">🎵</div>
+              <div class="stat-card-info">
+                <span class="stat-num" id="stat-total-plays">0</span>
+                <span class="stat-label">Total Pemutaran Lagu</span>
+                <span class="stat-subtext">Frekuensi Putar</span>
+              </div>
+            </div>
+            <div class="stat-card stat-card-amber">
+              <div class="stat-card-icon">🎙️</div>
+              <div class="stat-card-info">
+                <span class="stat-num" id="stat-total-artists">0</span>
+                <span class="stat-label">Artis Berbeda</span>
+                <span class="stat-subtext">Variasi Musik</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Top Tracks & Top Artists Grid -->
           <div class="stats-sections-flex" style="display: flex; gap: 24px; margin-top: 28px; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 300px;">
-              <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary);">🔥 Top 10 Lagu Paling Sering Diputar</h3>
+            <div style="flex: 1.2; min-width: 320px;" class="stats-box stats-top-tracks-box">
+              <div class="stats-box-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin: 0;">🔥 Top 10 Lagu Paling Sering Diputar</h3>
+                <span class="stats-box-tag" style="font-size: 0.75rem; color: var(--accent-primary); background: var(--accent-subtle); padding: 3px 8px; border-radius: var(--radius-full); font-weight: 600;">Paling Diulang</span>
+              </div>
               <div class="top-tracks-list" id="top-tracks-container">
                 <!-- Dynamic Top Tracks -->
               </div>
             </div>
-            <div style="flex: 1; min-width: 260px;">
-              <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary);">⭐ Top Artis Favorit</h3>
+            <div style="flex: 0.8; min-width: 260px;" class="stats-box stats-top-artists-box">
+              <div class="stats-box-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin: 0;">⭐ Top Artis Favorit</h3>
+                <span class="stats-box-tag" style="font-size: 0.75rem; color: var(--accent-amber); background: rgba(245, 158, 11, 0.15); padding: 3px 8px; border-radius: var(--radius-full); font-weight: 600;">Favoritmu</span>
+              </div>
               <div class="top-artists-list" id="top-artists-container">
                 <!-- Dynamic Top Artists -->
               </div>
@@ -1352,6 +1406,109 @@
           <div class="shortcut-item"><kbd>F</kbd><span>Fullscreen Mode</span></div>
           <div class="shortcut-item"><kbd>?</kbd><span>Shortcut Cheatsheet</span></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WhatsApp Status & Story Card Generator Modal -->
+  <div class="modal-overlay" id="wrapped-story-modal">
+    <div class="modal-card wrapped-modal-card" style="max-width: 860px; width: 95%; max-height: 92vh;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.3rem;">📸</span>
+          <div>
+            <h3 class="modal-title" style="margin: 0; line-height: 1.2;">KasetKu Wrapped 2026</h3>
+            <span style="font-size: 0.76rem; color: var(--text-tertiary);">Status WhatsApp & Instagram Story Generator</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="wrapped-story-close-btn">&times;</button>
+      </div>
+      <div class="modal-body wrapped-story-modal-body">
+        
+        <!-- Left Column: Story Preview Canvas -->
+        <div class="wrapped-preview-col">
+          <div class="story-preview-container" id="story-preview-container">
+            <canvas id="wrapped-story-canvas" width="1080" height="1920"></canvas>
+            <div class="story-preview-loading" id="story-preview-loading" style="display: none;">
+              <div class="spinner"></div>
+              <span>Merender Story HD...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Customizer & Actions -->
+        <div class="wrapped-controls-col">
+          <div class="wrapped-control-section">
+            <label class="control-label">🎨 Tema Estetik</label>
+            <div class="theme-chips-grid">
+              <button class="theme-chip active" data-theme="neon">
+                <span class="theme-dot" style="background: linear-gradient(135deg, #a855f7, #3b82f6);"></span>
+                <span>Cyber Neon</span>
+              </button>
+              <button class="theme-chip" data-theme="aurora">
+                <span class="theme-dot" style="background: linear-gradient(135deg, #10b981, #06b6d4);"></span>
+                <span>Aurora Deep</span>
+              </button>
+              <button class="theme-chip" data-theme="sunset">
+                <span class="theme-dot" style="background: linear-gradient(135deg, #f97316, #ec4899);"></span>
+                <span>Sunset Lo-Fi</span>
+              </button>
+              <button class="theme-chip" data-theme="midnight">
+                <span class="theme-dot" style="background: linear-gradient(135deg, #334155, #0f172a);"></span>
+                <span>Dark Velvet</span>
+              </button>
+              <button class="theme-chip" data-theme="synthwave">
+                <span class="theme-dot" style="background: linear-gradient(135deg, #ec4899, #8b5cf6);"></span>
+                <span>Synthwave 80s</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="wrapped-control-section">
+            <label class="control-label">📐 Ukuran Format</label>
+            <div class="format-toggle-btns">
+              <button class="format-btn active" data-aspect="9:16">
+                <span>📱 9:16 Status WA / Story</span>
+              </button>
+              <button class="format-btn" data-aspect="1:1">
+                <span>🖼️ 1:1 Persegi (Feed/Chat)</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="wrapped-info-box">
+            <p>✨ <strong>Resolusi Tinggi:</strong> Otomatis di-render dalam HD Crystal Clear (1080px), siap di-upload ke WhatsApp Status, IG Story, atau kirim langsung ke chat!</p>
+          </div>
+
+          <div class="wrapped-action-buttons">
+            <button id="btn-share-story-wa" class="btn-wrapped-action btn-share-wa">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+              </svg>
+              <span>Bagikan ke Status WA / Share</span>
+            </button>
+            
+            <div style="display: flex; gap: 8px;">
+              <button id="btn-download-story-png" class="btn-wrapped-action btn-download-png" style="flex: 1;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span>Download PNG (HD)</span>
+              </button>
+              <button id="btn-copy-story-img" class="btn-wrapped-action btn-copy-clip" style="flex: 1;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+                <span>Salin Gambar</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
       </div>
     </div>
   </div>
