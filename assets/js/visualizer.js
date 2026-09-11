@@ -78,10 +78,15 @@ class AudioVisualizer {
   render() {
     if (!this.isRunning) return;
 
+    if (document.hidden || !this.ctx || !this.canvas || this.canvas.offsetParent === null) {
+      // Pause loop while hidden/inactive, resume check in 250ms
+      setTimeout(() => {
+        if (this.isRunning) requestAnimationFrame(() => this.render());
+      }, 250);
+      return;
+    }
+
     this.animationId = requestAnimationFrame(() => this.render());
-
-    if (!this.ctx || !this.canvas || this.canvas.offsetParent === null) return;
-
     this.ctx.clearRect(0, 0, this.width, this.height);
 
     if (this.mode === 'bars') {
@@ -368,11 +373,16 @@ class ImmersiveCanvasVisualizer {
 
   render() {
     if (!this.isRunning) return;
-    this.animationId = requestAnimationFrame(() => this.render());
 
-    if (!this.ctx || !this.canvas) return;
     const parent = document.getElementById('immersive-overlay');
-    if (!parent || !parent.classList.contains('open')) return;
+    if (document.hidden || !parent || !parent.classList.contains('open') || !this.ctx || !this.canvas) {
+      setTimeout(() => {
+        if (this.isRunning) requestAnimationFrame(() => this.render());
+      }, 300);
+      return;
+    }
+
+    this.animationId = requestAnimationFrame(() => this.render());
 
     const data = window.AudioCore.getFrequencyData();
     const bass = (data[1] || 0) / 255;

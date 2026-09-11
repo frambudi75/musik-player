@@ -9,23 +9,27 @@ if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stderr.reconfigure(encoding='utf-8')
 
+import shutil
+
 FFMPEG_PATHS = [
-    r'C:\Users\habib\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1.1-full_build\bin',
     r'C:\ffmpeg\bin',
     r'C:\Program Files\ffmpeg\bin',
     '/usr/bin',
-    '/usr/local/bin'
+    '/usr/local/bin',
+    '/bin',
+    '/snap/bin',
+    '/www/server/ffmpeg/bin',
+    '/root/bin'
 ]
 
 def get_ffmpeg_dir():
-    if sys.platform != 'win32':
-        # On Linux/aaPanel, check if ffmpeg is in PATH
-        for p in ['/usr/bin', '/usr/local/bin', '/bin']:
-            if os.path.exists(os.path.join(p, 'ffmpeg')):
-                return p
-        return ''
+    # 1. Dynamically check if ffmpeg is in system PATH
+    ffmpeg_path = shutil.which('ffmpeg')
+    if ffmpeg_path:
+        return os.path.dirname(os.path.abspath(ffmpeg_path))
+    # 2. Check fallback paths
     for p in FFMPEG_PATHS:
-        if os.path.exists(os.path.join(p, 'ffmpeg.exe')):
+        if os.path.exists(os.path.join(p, 'ffmpeg.exe')) or os.path.exists(os.path.join(p, 'ffmpeg')):
             return p
     return ''
 

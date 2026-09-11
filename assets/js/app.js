@@ -1,12 +1,11 @@
 /**
- * NadaKita - Master Application Controller
- * Connects UI, Web Audio API, DSP FX Studio, Visualizer, Lyrics, PiP Mini-Player, Sleep Timer, and Statistics
+ * KasetKu - Master Application Controller
+ * High-Fidelity Retro-Modern Web Audio Player
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
   // UI Elements
   const searchInput = document.getElementById('search-input');
-  const searchClearBtn = document.getElementById('search-clear-btn');
   const songTableBody = document.getElementById('song-table-body');
   const songsGrid = document.getElementById('songs-grid');
   const tableViewWrap = document.getElementById('table-view-wrap');
@@ -24,8 +23,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const heroPlayBtn = document.getElementById('hero-play-btn');
 
   // Player Bar Elements
+  const playerCoverWrap = document.getElementById('player-cover-wrap');
   const playerCover = document.getElementById('player-cover');
   const playerTitle = document.getElementById('player-title');
+  const playerMiniEq = document.getElementById('player-mini-eq');
   const playerArtist = document.getElementById('player-artist');
   const playerHeartBtn = document.getElementById('player-heart-btn');
   const playPauseBtn = document.getElementById('play-pause-btn');
@@ -39,7 +40,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const timeTotal = document.getElementById('time-total');
   const progressBar = document.getElementById('progress-bar');
   const progressFill = document.getElementById('progress-fill');
-  const mobileProgressFill = document.getElementById('mobile-progress-fill');
   const progressThumb = document.getElementById('progress-thumb');
   const volumeBar = document.getElementById('volume-bar');
   const volumeFill = document.getElementById('volume-fill');
@@ -47,6 +47,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const pipBtn = document.getElementById('pip-btn');
   const sleepTimerBtn = document.getElementById('sleep-timer-btn');
   const sleepBadge = document.getElementById('sleep-badge');
+
+  // Theme Accent Switcher Elements
+  const themeSwitcherWrap = document.getElementById('theme-switcher-wrap');
+  const themePaletteBtn = document.getElementById('theme-palette-btn');
+  const themePaletteDropdown = document.getElementById('theme-palette-dropdown');
+  const themeChipBtns = document.querySelectorAll('.theme-chip-btn');
 
   // Right Panel Elements
   const rightPanel = document.getElementById('right-panel');
@@ -104,21 +110,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const playlistNameInput = document.getElementById('playlist-name-input');
   const toastContainer = document.getElementById('toast-container');
 
-  // Online YouTube Streaming Elements
-  const onlineViewWrap = document.getElementById('online-view-wrap');
-  const onlineSearchInput = document.getElementById('online-search-input');
-  const onlineSearchSubmitBtn = document.getElementById('online-search-submit-btn');
-  const onlineLoadingState = document.getElementById('online-loading-state');
-  const onlineResultsContainer = document.getElementById('online-results-container');
-  const onlineTableBody = document.getElementById('online-table-body');
-  const onlineTagPills = document.querySelectorAll('.online-tag-pill');
-
   // State
   let currentNavTab = 'library';
   let currentActivePlaylistId = null;
   let isDraggingScrubber = false;
-  let onlineSearchResults = [];
-  let isSearchingOnline = false;
   let visualizer = null;
   let sleepTimerInterval = null;
   let sleepTargetSeconds = 0;
@@ -155,30 +150,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   window.LyricsEngine.setContainers(lyricsView, immersiveLyrics);
 
-  // Helper: Get safe public cover URL (encodes special characters like # or Japanese symbols)
-  function getSafeCoverUrl(song) {
-    if (!song) return DEFAULT_COVER;
-    let url = (typeof song === 'object') ? (song.cover || '') : String(song);
+  // Helper: Get safe public cover URL (replaces legacy .covers/ with covers/)
+  function getSafeCoverUrl(songOrUrl) {
+    if (!songOrUrl) return DEFAULT_COVER;
+    let url = (typeof songOrUrl === 'object') ? (songOrUrl.cover || '') : String(songOrUrl);
     if (!url) return DEFAULT_COVER;
-    if (url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
+    if (url.includes('songs/.covers/')) {
+      url = url.replace('songs/.covers/', 'songs/covers/');
     }
-    const parts = url.split('/');
-    return parts.map(part => {
-      try {
-        return encodeURIComponent(decodeURIComponent(part));
-      } catch (e) {
-        return encodeURIComponent(part);
-      }
-    }).join('/');
+    return url;
   }
 
   // Helper: Get safe public audio URL (encodes special characters like # or Japanese symbols)
   function getSafeAudioUrl(songOrUrl) {
     if (!songOrUrl) return '';
-    let url = (typeof songOrUrl === 'object') ? (songOrUrl.url || songOrUrl.src || '') : String(songOrUrl);
+    let url = (typeof songOrUrl === 'object') ? (songOrUrl.url || '') : String(songOrUrl);
     if (!url) return '';
-    if (url.startsWith('blob:') || url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://') || url.startsWith('api/')) {
+    if (url.startsWith('blob:') || url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    // If it's an API endpoint or contains query parameters, preserve query string
+    if (url.includes('api/') || url.includes('?')) {
+      if (url.includes('?')) {
+        const [path, query] = url.split('?');
+        const parts = path.split('/');
+        const encodedPath = parts.map(part => {
+          try { return encodeURIComponent(decodeURIComponent(part)); } catch (e) { return encodeURIComponent(part); }
+        }).join('/');
+        return `${encodedPath}?${query}`;
+      }
       return url;
     }
     const parts = url.split('/');
@@ -225,48 +225,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let currentSortMode = 'default';
   let currentGenreFilter = '';
-  let currentViewMode = 'table';
-
-  // Multi-Token Fuzzy Search Normalizer
-  function normalizeSearchText(str) {
-    if (!str) return '';
-    return str
-      .toString()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // remove diacritics / accents
-      .toLowerCase()
-      .replace(/[_\-.\(\)\[\]{}'"`]/g, ' ') // replace punctuation & separators with spaces
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
-
-  function matchSongQuery(song, queryTokens, rawTokens) {
-    const normTitle = normalizeSearchText(song.title);
-    const normArtist = normalizeSearchText(song.artist);
-    const normAlbum = normalizeSearchText(song.album || '');
-    const normFilename = normalizeSearchText(song.filename || '');
-    const normGenre = normalizeSearchText(song.genre || '');
-    const combinedNorm = `${normTitle} ${normArtist} ${normAlbum} ${normFilename} ${normGenre}`;
-
-    // All query tokens must match somewhere in the combined metadata
-    return queryTokens.every((token, idx) => {
-      const rawToken = rawTokens[idx];
-      return combinedNorm.includes(token) || (rawToken && combinedNorm.includes(rawToken));
-    });
-  }
-
-  function filterSongsByQuery(songs, rawQuery) {
-    const cleanQuery = (rawQuery || '').trim();
-    if (!cleanQuery) return songs;
-
-    const normQuery = normalizeSearchText(cleanQuery);
-    const queryTokens = normQuery.split(' ').filter(Boolean);
-    const rawTokens = cleanQuery.toLowerCase().split(/\s+/).filter(Boolean);
-
-    if (queryTokens.length === 0) return songs;
-
-    return songs.filter((s) => matchSongQuery(s, queryTokens, rawTokens));
-  }
 
   // Update Genre Filter Dropdown Options
   function updateGenreFilterOptions() {
@@ -473,20 +431,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                 </svg>
               </button>
-              <button class="offline-btn action-btn-desktop ${isSaved ? 'saved' : ''}" title="${isSaved ? 'Hapus dari Penyimpanan Offline' : 'Simpan Offline (Bisa diputar tanpa internet)'}" data-action="offline" data-id="${escapeHTML(song.id)}">
+              <button class="offline-btn ${isSaved ? 'saved' : ''}" title="${isSaved ? 'Hapus dari Penyimpanan Offline' : 'Simpan Offline (Bisa diputar tanpa internet)'}" data-action="offline" data-id="${escapeHTML(song.id)}">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
               </button>
-              <button class="add-pl-btn action-btn-desktop" title="Tambahkan ke Playlist" data-action="add-pl" data-id="${escapeHTML(song.id)}">
+              <button class="add-pl-btn" title="Tambahkan ke Playlist" data-action="add-pl" data-id="${escapeHTML(song.id)}">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
               </button>
-              <button class="trim-btn action-btn-desktop" title="Potong Ringtone / Audio Trimmer" data-action="trim" data-id="${escapeHTML(song.id)}">
+              <button class="trim-btn" title="Potong Ringtone / Audio Trimmer" data-action="trim" data-id="${escapeHTML(song.id)}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="6" cy="6" r="3"></circle>
                   <circle cx="6" cy="18" r="3"></circle>
@@ -495,24 +453,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                   <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
                 </svg>
               </button>
-              <button class="lrc-btn action-btn-desktop" title="Studio Buat Lirik Sinkron (.LRC)" data-action="lrc" data-id="${escapeHTML(song.id)}">
+              <button class="lrc-btn" title="Studio Buat Lirik Sinkron (.LRC)" data-action="lrc" data-id="${escapeHTML(song.id)}">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
                   <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
                   <path d="M2 2l7.586 7.586"></path>
                 </svg>
               </button>
-              <button class="edit-meta-btn action-btn-desktop" title="Edit Info Lagu" data-action="edit-meta" data-id="${escapeHTML(song.id)}">
+              <button class="edit-meta-btn" title="Edit Info Lagu" data-action="edit-meta" data-id="${escapeHTML(song.id)}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 20h9"></path>
                   <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                </svg>
-              </button>
-              <button class="more-opts-btn action-btn-mobile" title="Menu Opsi Lagu" data-action="more-opts" data-id="${escapeHTML(song.id)}">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="1.5"></circle>
-                  <circle cx="12" cy="5" r="1.5"></circle>
-                  <circle cx="12" cy="19" r="1.5"></circle>
                 </svg>
               </button>
               ${isInsideCustomPlaylist ? `
@@ -535,21 +486,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Fast Grid View Renderer (Single Layout Pass)
   function renderSongGrid(songs) {
     if (songs.length === 0) {
-      songsGrid.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-tertiary);">
-          Tidak ada lagu yang ditemukan di koleksi
-        </div>
-      `;
+      songsGrid.innerHTML = '';
       return;
     }
 
     const currentSongId = window.PlaylistManager.currentSong ? window.PlaylistManager.currentSong.id : null;
-    const isInsideCustomPlaylist = currentNavTab === 'playlist' && currentActivePlaylistId && currentActivePlaylistId !== 'favorites';
 
     const cardsHtml = songs.map((song) => {
       songsMap.set(song.id, song);
       const isPlaying = currentSongId === song.id;
-      const isLiked = window.PlaylistManager.isLiked(song.id);
       const isSaved = song.isOffline || (window.OfflineDB && window.OfflineDB.hasOfflineBlob(song.id));
       const coverSrc = getSafeCoverUrl(song);
 
@@ -563,67 +508,44 @@ document.addEventListener('DOMContentLoaded', async () => {
               </svg>
             </div>
           </div>
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
             <div style="min-width: 0; flex: 1;">
               <div class="card-title">${escapeHTML(song.title)}</div>
               <div class="card-subtitle">${escapeHTML(song.artist)}</div>
             </div>
-            <div class="card-actions-group" style="display: flex; align-items: center; gap: 4px; position: relative; z-index: 2;">
-              <button class="heart-btn heart-card-btn ${isLiked ? 'liked' : ''}" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="${isLiked ? 'Batal Suka' : 'Suka'}" data-action="like" data-id="${escapeHTML(song.id)}">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                </svg>
-              </button>
-              <button class="offline-btn offline-card-btn action-btn-desktop ${isSaved ? 'saved' : ''}" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="${isSaved ? 'Hapus dari Penyimpanan Offline' : 'Simpan Offline'}" data-action="offline" data-id="${escapeHTML(song.id)}">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <button class="offline-btn offline-card-btn ${isSaved ? 'saved' : ''}" style="width: 24px; height: 24px;" title="${isSaved ? 'Tersimpan Offline' : 'Simpan Offline'}" data-action="offline" data-id="${escapeHTML(song.id)}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
               </button>
-              <button class="trim-btn trim-card-btn action-btn-desktop" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="Potong Ringtone" data-action="trim" data-id="${escapeHTML(song.id)}">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button class="trim-btn trim-card-btn" style="width: 24px; height: 24px;" title="Potong Ringtone" data-action="trim" data-id="${escapeHTML(song.id)}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="6" cy="6" r="3"></circle>
                   <circle cx="6" cy="18" r="3"></circle>
                   <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
-                  <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
-                  <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
                 </svg>
               </button>
-              <button class="lrc-btn lrc-card-btn action-btn-desktop" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="Buat Lirik LRC" data-action="lrc" data-id="${escapeHTML(song.id)}">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button class="lrc-btn lrc-card-btn" style="width: 24px; height: 24px;" title="Buat Lirik LRC" data-action="lrc" data-id="${escapeHTML(song.id)}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
                   <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
-                  <path d="M2 2l7.586 7.586"></path>
                 </svg>
               </button>
-              <button class="edit-meta-btn edit-card-btn action-btn-desktop" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="Edit Info" data-action="edit-meta" data-id="${escapeHTML(song.id)}">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button class="edit-meta-btn edit-card-btn" style="width: 24px; height: 24px;" title="Edit Info" data-action="edit-meta" data-id="${escapeHTML(song.id)}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 20h9"></path>
                   <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
                 </svg>
               </button>
-              <button class="icon-btn add-pl-card-btn action-btn-desktop" style="width: 28px; height: 28px; min-width: 28px; padding: 0; flex-shrink: 0;" title="Tambah ke Playlist" data-action="add-pl" data-id="${escapeHTML(song.id)}">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button class="icon-btn add-pl-card-btn" style="width: 24px; height: 24px; flex-shrink: 0;" title="Tambah ke Playlist" data-action="add-pl" data-id="${escapeHTML(song.id)}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
               </button>
-              <button class="more-opts-btn action-btn-mobile" style="width: 28px; height: 28px; min-width: 28px; padding: 0; background: transparent; border: none; color: var(--text-secondary); cursor: pointer;" title="Menu Opsi Lagu" data-action="more-opts" data-id="${escapeHTML(song.id)}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="1.5"></circle>
-                  <circle cx="12" cy="5" r="1.5"></circle>
-                  <circle cx="12" cy="19" r="1.5"></circle>
-                </svg>
-              </button>
-              ${isInsideCustomPlaylist ? `
-                <button class="remove-pl-btn remove-pl-card-btn" style="width: 28px; height: 28px; min-width: 28px; padding: 0;" title="Hapus dari playlist ini" data-action="remove-pl" data-id="${escapeHTML(song.id)}">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
-              ` : ''}
             </div>
           </div>
         </div>
@@ -644,11 +566,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!song) return;
 
     if (btn) {
-      e.stopPropagation();
       const action = btn.dataset.action;
-      if (action === 'more-opts') {
-        openSongActionsSheet(song);
-      } else if (action === 'like') {
+      if (action === 'like') {
         const liked = await window.PlaylistManager.toggleLike(song.id);
         btn.classList.toggle('liked', liked);
         btn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
@@ -708,21 +627,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!song) return;
 
     if (btn) {
-      e.stopPropagation();
       const action = btn.dataset.action;
-      if (action === 'more-opts') {
-        openSongActionsSheet(song);
-      } else if (action === 'like') {
-        const liked = await window.PlaylistManager.toggleLike(song.id);
-        btn.classList.toggle('liked', liked);
-        btn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
-        if (window.PlaylistManager.currentSong && window.PlaylistManager.currentSong.id === song.id) {
-          playerHeartBtn.classList.toggle('liked', liked);
-          playerHeartBtn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
-        }
-        showToast(liked ? 'Ditambahkan ke Liked Songs' : 'Dihapus dari Liked Songs');
-        if (currentNavTab === 'liked') renderCurrentView();
-      } else if (action === 'offline') {
+      if (action === 'offline') {
         const isSaved = await window.OfflineDB.isSaved(song.id);
         if (isSaved) {
           await window.OfflineDB.removeTrack(song.id);
@@ -750,270 +656,106 @@ document.addEventListener('DOMContentLoaded', async () => {
         openLrcMakerModal(song);
       } else if (action === 'edit-meta') {
         openEditMetadataModal(song);
-      } else if (action === 'remove-pl') {
-        await window.PlaylistManager.removeSongFromPlaylist(currentActivePlaylistId, song.id);
-        showToast('Lagu dihapus dari playlist', '✓');
-        renderSidebarPlaylists();
-        renderCurrentView();
       }
     } else {
       window.PlaylistManager.playTrack(song, currentDisplayedSongs);
     }
   });
 
-  // Render Statistics & Wrapped View
+  // Render Statistics View
   function renderStatsView() {
     const summary = window.PlaylistManager.getStatsSummary();
     const statMinutesEl = document.getElementById('stat-total-minutes');
-    const statTimeDetailEl = document.getElementById('stat-time-detail');
     const statPlaysEl = document.getElementById('stat-total-plays');
     const statArtistsEl = document.getElementById('stat-total-artists');
-    const statTopArtistNameEl = document.getElementById('stat-top-artist-name');
-    const statTopArtistPlaysEl = document.getElementById('stat-top-artist-plays');
-    const statPersonaBadge = document.getElementById('stat-persona-badge');
-    const statGenreBadge = document.getElementById('stat-genre-badge');
-    const spotlightContainer = document.getElementById('stats-top-spotlight');
     const topTracksContainer = document.getElementById('top-tracks-container');
     const topArtistsContainer = document.getElementById('top-artists-container');
-    const statInsightText = document.getElementById('stat-insight-text');
 
     if (statMinutesEl) statMinutesEl.textContent = summary.totalMinutes;
-    if (statTimeDetailEl) statTimeDetailEl.textContent = `~${summary.formattedTime}`;
     if (statPlaysEl) statPlaysEl.textContent = summary.totalPlays;
     if (statArtistsEl) statArtistsEl.textContent = summary.topArtists.length;
-    if (statPersonaBadge) statPersonaBadge.textContent = summary.persona;
-    if (statGenreBadge) statGenreBadge.textContent = `🎵 Genre Dominan: ${summary.topGenre || 'Audio'}`;
 
-    if (summary.favoriteArtist) {
-      if (statTopArtistNameEl) statTopArtistNameEl.textContent = summary.favoriteArtist.name;
-      if (statTopArtistPlaysEl) statTopArtistPlaysEl.textContent = `${summary.favoriteArtist.count}x Putar`;
-    } else {
-      if (statTopArtistNameEl) statTopArtistNameEl.textContent = '-';
-      if (statTopArtistPlaysEl) statTopArtistPlaysEl.textContent = '0x Putar';
-    }
-
-    // Hero Spotlight Card for #1 Most Played Song
-    if (spotlightContainer) {
-      if (summary.favoriteSong && summary.favoriteSong.song) {
-        const topSong = summary.favoriteSong.song;
-        const topCover = getSafeCoverUrl(topSong);
-        spotlightContainer.innerHTML = `
-          <div class="stats-spotlight-card" id="stats-spotlight-btn" title="Putar Lagu Juara 1 Ini">
-            <div class="spotlight-crown-badge">👑 JUARA 1 DIPUTAR PALING BANYAK</div>
-            <div class="spotlight-body">
-              <div class="spotlight-cover-wrap">
-                <img class="spotlight-cover" src="${escapeHTML(topCover)}" alt="Cover" />
-                <div class="spotlight-play-overlay">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                </div>
-              </div>
-              <div class="spotlight-meta">
-                <div class="spotlight-title">${escapeHTML(topSong.title)}</div>
-                <div class="spotlight-artist">${escapeHTML(topSong.artist)}</div>
-                <div class="spotlight-play-tag">🔥 Diputar ${summary.favoriteSong.count} kali</div>
-              </div>
-            </div>
-          </div>
-        `;
-        const spotBtn = document.getElementById('stats-spotlight-btn');
-        if (spotBtn) {
-          spotBtn.onclick = () => {
-            const trk = window.PlaylistManager.getSongById(summary.favoriteSong.id) || topSong;
-            if (trk) window.PlaylistManager.playTrack(trk);
-          };
-        }
-      } else {
-        spotlightContainer.innerHTML = `
-          <div class="stats-spotlight-card empty">
-            <div style="font-size: 2rem; margin-bottom: 4px;">🎶</div>
-            <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary);">Mulai Mendengarkan</div>
-            <div style="font-size: 0.76rem; color: var(--text-secondary); margin-top: 2px;">Putar lagu untuk membuka kilasan Wrapped Anda</div>
-          </div>
-        `;
-      }
-    }
-
-    // Top 10 Tracks List
     if (topTracksContainer) {
       topTracksContainer.innerHTML = '';
       if (summary.topTracks.length === 0) {
-        topTracksContainer.innerHTML = `
-          <div style="text-align: center; padding: 32px 16px; color: var(--text-tertiary); background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
-            <div style="font-size: 2rem; margin-bottom: 8px;">🎧</div>
-            <p style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary);">Belum ada riwayat lagu yang diputar</p>
-            <p style="font-size: 0.78rem; margin-top: 4px;">Pilih lagu dari Koleksi dan nikmati musik favorit Anda!</p>
-          </div>
-        `;
+        topTracksContainer.innerHTML = `<div style="color: var(--text-tertiary); font-size: 0.85rem;">Belum ada riwayat pemutaran. Putar lagu untuk melihat statistik Anda!</div>`;
       } else {
-        const maxCount = Math.max(...summary.topTracks.map(t => t.count), 1);
         summary.topTracks.forEach((item, i) => {
-          const trackSong = item.song || window.PlaylistManager.getSongById(item.id) || { title: 'Unknown Track', artist: 'Unknown' };
-          const coverSrc = getSafeCoverUrl(trackSong);
-          const percent = Math.round((item.count / maxCount) * 100);
-
-          let rankBadge = `<span class="stat-rank-pill rank-normal">#${i + 1}</span>`;
-          if (i === 0) rankBadge = `<span class="stat-rank-pill rank-gold">🥇 #1</span>`;
-          else if (i === 1) rankBadge = `<span class="stat-rank-pill rank-silver">🥈 #2</span>`;
-          else if (i === 2) rankBadge = `<span class="stat-rank-pill rank-bronze">🥉 #3</span>`;
-
           const row = document.createElement('div');
           row.className = 'top-track-card';
           row.innerHTML = `
-            <div class="top-track-rank-box">
-              ${rankBadge}
-            </div>
-            <div class="top-track-cover-box">
-              <img class="top-track-thumb" src="${escapeHTML(coverSrc)}" alt="Cover" loading="lazy" onerror="this.src='${DEFAULT_COVER}'" />
-              <div class="top-track-play-hover">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+              <span style="font-family: var(--font-mono); font-weight: 700; color: ${i === 0 ? 'var(--accent-amber)' : 'var(--text-tertiary)'}; font-size: 0.95rem; width: 22px;">#${i + 1}</span>
+              <div style="display: flex; flex-direction: column; min-width: 0;">
+                <span style="font-weight: 600; color: var(--text-primary); font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(item.song.title)}</span>
+                <span style="font-size: 0.75rem; color: var(--text-secondary);">${escapeHTML(item.song.artist)}</span>
               </div>
             </div>
-            <div class="top-track-info-box">
-              <div class="top-track-title-row">
-                <span class="top-track-title">${escapeHTML(trackSong.title)}</span>
-              </div>
-              <div class="top-track-sub-row">
-                <span class="top-track-artist">${escapeHTML(trackSong.artist)}</span>
-                <div class="top-track-progress-track">
-                  <div class="top-track-progress-fill" style="width: ${percent}%;"></div>
-                </div>
-              </div>
-            </div>
-            <div class="top-track-count-badge">
-              <span>🔥 ${item.count}x</span>
-            </div>
+            <span style="font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; color: var(--accent-primary); background: var(--accent-subtle); padding: 4px 8px; border-radius: var(--radius-full);">${item.count}x</span>
           `;
-
           row.onclick = () => {
-            const track = window.PlaylistManager.getSongById(item.id) || trackSong;
+            const track = window.PlaylistManager.getSongById(item.id);
             if (track) window.PlaylistManager.playTrack(track);
           };
-
           topTracksContainer.appendChild(row);
         });
       }
     }
 
-    // Top Artists Leaderboard
     if (topArtistsContainer) {
       topArtistsContainer.innerHTML = '';
       if (summary.topArtists.length === 0) {
-        topArtistsContainer.innerHTML = `
-          <div style="text-align: center; padding: 24px 16px; color: var(--text-tertiary); background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
-            Belum ada data artis yang tersimpan.
-          </div>
-        `;
+        topArtistsContainer.innerHTML = `<div style="color: var(--text-tertiary); font-size: 0.85rem;">Belum ada data artis.</div>`;
       } else {
-        const maxArtistCount = Math.max(...summary.topArtists.map(a => a.count), 1);
         summary.topArtists.forEach((item, i) => {
-          const percent = Math.round((item.count / maxArtistCount) * 100);
-          const initial = (item.name || 'A').trim().charAt(0).toUpperCase();
-
-          let medalClass = 'avatar-normal';
-          if (i === 0) medalClass = 'avatar-gold';
-          else if (i === 1) medalClass = 'avatar-silver';
-          else if (i === 2) medalClass = 'avatar-bronze';
-
           const row = document.createElement('div');
           row.className = 'top-artist-item';
           row.innerHTML = `
-            <div class="artist-rank-avatar ${medalClass}">
-              <span>${i === 0 ? '👑' : initial}</span>
-            </div>
-            <div class="artist-info-stack">
-              <div class="artist-name-row">
-                <span class="artist-name" title="${escapeHTML(item.name)}">${escapeHTML(item.name)}</span>
-                <span class="artist-count-tag">${item.count} Lagu</span>
-              </div>
-              <div class="artist-bar-track">
-                <div class="artist-bar-fill" style="width: ${percent}%;"></div>
-              </div>
-            </div>
+            <span style="font-weight: 600; color: var(--text-primary); font-size: 0.88rem;">${escapeHTML(item.name)}</span>
+            <span style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-secondary);">${item.count} lagu diputar</span>
           `;
-
-          row.onclick = () => {
-            const searchInput = document.getElementById('search-input');
-            if (searchInput) {
-              // Switch to library tab and search for artist
-              const libNavBtn = document.querySelector('.nav-item[data-tab="library"]');
-              if (libNavBtn) libNavBtn.click();
-              searchInput.value = item.name;
-              searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-          };
-
           topArtistsContainer.appendChild(row);
         });
-      }
-    }
-
-    // Personalized Insight Text
-    if (statInsightText) {
-      if (summary.totalPlays > 0) {
-        statInsightText.innerHTML = `
-          🎉 Anda telah menghabiskan waktu sekitar <strong>${escapeHTML(summary.formattedTime)}</strong> mendengarkan musik di NadaKita dengan <strong>${summary.totalPlays} total pemutaran</strong> lagu. Artis yang paling menemani Anda adalah <strong>${escapeHTML(summary.favoriteArtist ? summary.favoriteArtist.name : 'beragam artis')}</strong>.
-        `;
-      } else {
-        statInsightText.innerHTML = `
-          Belum ada lagu yang diputar dalam sesi ini. Putar lagu favorit Anda dari koleksi lokal untuk menghasilkan wawasan mendengarkan yang unik!
-        `;
       }
     }
   }
 
   // Render Current Tab Content
   async function renderCurrentView() {
-    const filterSortBar = document.getElementById('filter-sort-bar');
-    const sectionHeader = document.getElementById('section-header');
+    const ytMusicViewWrap = document.getElementById('yt-music-view-wrap');
 
     if (currentNavTab === 'stats') {
       heroBanner.style.display = 'none';
-      if (sectionHeader) sectionHeader.style.display = 'none';
-      if (filterSortBar) filterSortBar.style.display = 'none';
+      document.getElementById('section-header').style.display = 'none';
       tableViewWrap.style.display = 'none';
       songsGrid.style.display = 'none';
-      if (onlineViewWrap) onlineViewWrap.style.display = 'none';
       statsViewWrap.style.display = 'block';
+      if (ytMusicViewWrap) ytMusicViewWrap.style.display = 'none';
       renderStatsView();
       return;
     }
 
-    if (currentNavTab === 'online') {
+    if (currentNavTab === 'yt-music') {
       heroBanner.style.display = 'none';
-      if (sectionHeader) sectionHeader.style.display = 'none';
-      if (filterSortBar) filterSortBar.style.display = 'none';
+      document.getElementById('section-header').style.display = 'none';
       tableViewWrap.style.display = 'none';
       songsGrid.style.display = 'none';
       statsViewWrap.style.display = 'none';
-      if (onlineViewWrap) onlineViewWrap.style.display = 'block';
-      if (onlineSearchResults.length === 0) {
-        performOnlineSearch('Top Hits Indonesia 2026');
+      if (ytMusicViewWrap) {
+        ytMusicViewWrap.style.display = 'block';
+        initYouTubeMusicOnline();
       }
       return;
     }
 
-    if (onlineViewWrap) onlineViewWrap.style.display = 'none';
+    if (ytMusicViewWrap) ytMusicViewWrap.style.display = 'none';
     heroBanner.style.display = 'flex';
-    if (sectionHeader) sectionHeader.style.display = 'flex';
-    if (filterSortBar) filterSortBar.style.display = 'flex';
+    document.getElementById('section-header').style.display = 'flex';
     statsViewWrap.style.display = 'none';
 
-    // Set view container visibility according to currentViewMode
-    if (currentViewMode === 'grid') {
-      tableViewWrap.style.display = 'none';
-      songsGrid.style.display = 'grid';
-    } else {
-      tableViewWrap.style.display = 'block';
-      songsGrid.style.display = 'none';
-    }
-
     let list = [...window.PlaylistManager.library];
-    const rawQuery = (searchInput.value || '').trim();
-    if (searchClearBtn) {
-      searchClearBtn.style.display = rawQuery ? 'flex' : 'none';
-    }
+    const query = (searchInput.value || '').trim().toLowerCase();
 
-    let isScopedSearch = false;
     if (currentNavTab === 'offline') {
       try {
         const savedTracks = await window.OfflineDB.getAllSavedSongs();
@@ -1023,13 +765,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         list = [];
         sectionTitle.textContent = 'Lagu Tersimpan Offline (0)';
       }
-      isScopedSearch = true;
     } else if (currentNavTab === 'liked') {
       const fav = window.PlaylistManager.playlists.find((p) => p.id === 'favorites');
       const likedIds = fav ? fav.song_ids : [];
       list = list.filter((s) => likedIds.includes(s.id));
       sectionTitle.innerHTML = 'Liked Songs';
-      isScopedSearch = true;
     } else if (currentNavTab === 'playlist' && currentActivePlaylistId) {
       const pl = window.PlaylistManager.playlists.find((p) => p.id === currentActivePlaylistId);
       if (pl) {
@@ -1060,27 +800,17 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         }, 50);
       }
-      isScopedSearch = true;
     } else {
       sectionTitle.textContent = 'Koleksi Musik';
     }
 
-    if (rawQuery) {
-      const filtered = filterSongsByQuery(list, rawQuery);
-      // Smart Fallback: If 0 results in current scoped tab (liked/playlist/offline), fallback to searching general library!
-      if (filtered.length === 0 && isScopedSearch && window.PlaylistManager.library.length > 0) {
-        const globalFiltered = filterSongsByQuery(window.PlaylistManager.library, rawQuery);
-        if (globalFiltered.length > 0) {
-          list = globalFiltered;
-          sectionTitle.textContent = `Hasil Pencarian Global "${rawQuery}" (${list.length})`;
-        } else {
-          list = [];
-          sectionTitle.textContent = `Hasil Pencarian "${rawQuery}" (0)`;
-        }
-      } else {
-        list = filtered;
-        sectionTitle.textContent = `Hasil Pencarian "${rawQuery}" (${list.length})`;
-      }
+    if (query) {
+      list = list.filter((s) =>
+        s.title.toLowerCase().includes(query) ||
+        s.artist.toLowerCase().includes(query) ||
+        (s.album && s.album.toLowerCase().includes(query))
+      );
+      sectionTitle.textContent = `Hasil Pencarian "${query}"`;
     }
 
     // Genre Filter
@@ -1099,12 +829,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       list.sort((a, b) => a.artist.localeCompare(b.artist));
     }
 
-    // Fast Single-View Rendering (Eliminates double layout thrashing)
-    if (currentViewMode === 'grid') {
-      renderSongGrid(list);
-    } else {
-      renderSongTable(list);
-    }
+    renderSongTable(list);
+    renderSongGrid(list);
   }
 
   // Render Sidebar Playlists List
@@ -1131,10 +857,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
         currentNavTab = 'playlist';
         currentActivePlaylistId = pl.id;
-        if (searchInput) {
-          searchInput.value = '';
-          if (searchClearBtn) searchClearBtn.style.display = 'none';
-        }
         navItems.forEach((n) => n.classList.remove('active'));
         renderSidebarPlaylists();
         renderCurrentView();
@@ -1245,7 +967,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: song.title,
         artist: song.artist,
-        album: song.album || 'NadaKita',
+        album: song.album || 'KasetKu',
         artwork: [
           { src: song.cover || DEFAULT_COVER, sizes: '512x512', type: 'image/png' },
           { src: song.cover || DEFAULT_COVER, sizes: '192x192', type: 'image/png' }
@@ -1325,6 +1047,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.AudioCore.onPlay = () => {
     playIcon.style.display = 'none';
     pauseIcon.style.display = 'block';
+    if (playerCoverWrap) playerCoverWrap.classList.add('playing');
+    if (playerMiniEq) playerMiniEq.classList.add('playing');
     if (visualizer) visualizer.start();
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
     requestWakeLock();
@@ -1334,6 +1058,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.AudioCore.onPause = () => {
     playIcon.style.display = 'block';
     pauseIcon.style.display = 'none';
+    if (playerCoverWrap) playerCoverWrap.classList.remove('playing');
+    if (playerMiniEq) playerMiniEq.classList.remove('playing');
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
     releaseWakeLock();
     savePlaybackSessionState();
@@ -1351,6 +1077,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const title = brokenSong.title || 'Lagu';
+
+    if (brokenSong.is_online) {
+      showToast(`Gagal streaming online "${title}". Gunakan tombol Simpan untuk mengunduh ke library.`, '⚠️');
+      return;
+    }
+
     const cleanArtist = (brokenSong.artist && brokenSong.artist !== 'Unknown Artist') ? brokenSong.artist : '';
     const query = `${title} ${cleanArtist}`.trim();
 
@@ -1389,7 +1121,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       timeTotal.textContent = formatTime(duration);
       const percent = duration > 0 ? (currentTime / duration) * 100 : 0;
       progressFill.style.width = `${percent}%`;
-      if (mobileProgressFill) mobileProgressFill.style.width = `${percent}%`;
       progressThumb.style.left = `${percent}%`;
     }
     if (waveformScrubber) {
@@ -1530,10 +1261,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!tab) return;
       currentNavTab = tab;
       currentActivePlaylistId = null;
-      if (searchInput) {
-        searchInput.value = '';
-        if (searchClearBtn) searchClearBtn.style.display = 'none';
-      }
       navItems.forEach((n) => n.classList.remove('active'));
       item.classList.add('active');
       renderSidebarPlaylists();
@@ -1547,355 +1274,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     clearTimeout(searchDebounceTimer);
     searchDebounceTimer = setTimeout(() => {
       renderCurrentView();
-    }, 60);
+    }, 80);
   });
-
-  if (searchClearBtn) {
-    searchClearBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      searchInput.value = '';
-      searchClearBtn.style.display = 'none';
-      searchInput.focus();
-      renderCurrentView();
-    });
-  }
-
-  // ==========================================
-  // YOUTUBE MUSIC EXPLORER & STREAM SYSTEM
-  // ==========================================
-  const ytmCardsGrid = document.getElementById('ytm-cards-grid');
-  const ytmHeadingTitle = document.getElementById('ytm-heading-title');
-  const ytmCountBadge = document.getElementById('ytm-count-badge');
-  const ytmMoodChips = document.querySelectorAll('.ytm-mood-chip');
-  const ytmViewGridBtn = document.getElementById('ytm-view-grid-btn');
-  const ytmViewListBtn = document.getElementById('ytm-view-list-btn');
-  let ytmCurrentView = 'grid'; // 'grid' (YouTube Music style) or 'list' (Table style)
-
-  async function performOnlineSearch(query, headingText = null) {
-    if (!query || !query.trim() || isSearchingOnline) return;
-    isSearchingOnline = true;
-    if (onlineLoadingState) onlineLoadingState.style.display = 'block';
-    if (ytmCardsGrid) ytmCardsGrid.style.display = 'none';
-    if (onlineResultsContainer) onlineResultsContainer.style.display = 'none';
-    if (headingText && ytmHeadingTitle) {
-      ytmHeadingTitle.textContent = headingText;
-    }
-
-    try {
-      const res = await fetch(`api/yt_search.php?q=${encodeURIComponent(query.trim())}&limit=16`);
-      const json = await res.json();
-      if (json.status === 'success' && Array.isArray(json.results)) {
-        onlineSearchResults = json.results;
-        renderOnlineResults(onlineSearchResults);
-      } else {
-        showToast(json.message || 'Pencarian online gagal', '⚠️');
-        renderOnlineResults([]);
-      }
-    } catch (err) {
-      console.error('Online search error:', err);
-      showToast('Gagal terhubung ke YouTube Search API', '⚠️');
-      renderOnlineResults([]);
-    } finally {
-      isSearchingOnline = false;
-      if (onlineLoadingState) onlineLoadingState.style.display = 'none';
-      updateYTMViewDisplay();
-    }
-  }
-
-  function updateYTMViewDisplay() {
-    if (ytmCurrentView === 'grid') {
-      if (ytmCardsGrid) ytmCardsGrid.style.display = 'grid';
-      if (onlineResultsContainer) onlineResultsContainer.style.display = 'none';
-      if (ytmViewGridBtn) ytmViewGridBtn.classList.add('active');
-      if (ytmViewListBtn) ytmViewListBtn.classList.remove('active');
-    } else {
-      if (ytmCardsGrid) ytmCardsGrid.style.display = 'none';
-      if (onlineResultsContainer) onlineResultsContainer.style.display = 'block';
-      if (ytmViewGridBtn) ytmViewGridBtn.classList.remove('active');
-      if (ytmViewListBtn) ytmViewListBtn.classList.add('active');
-    }
-  }
-
-  function renderOnlineResults(tracks) {
-    if (ytmCountBadge) {
-      ytmCountBadge.textContent = `${tracks.length} Lagu`;
-    }
-    renderOnlineCards(tracks);
-    renderOnlineTable(tracks);
-  }
-
-  function renderOnlineCards(tracks) {
-    if (!ytmCardsGrid) return;
-    ytmCardsGrid.innerHTML = '';
-
-    if (!tracks || tracks.length === 0) {
-      ytmCardsGrid.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align: center; padding: 48px 0; color: var(--text-secondary);">
-          🔍 Tidak ada lagu ditemukan. Coba pilih kategori lain di atas atau ketik kata kunci pencarian.
-        </div>
-      `;
-      return;
-    }
-
-    tracks.forEach((item) => {
-      const card = document.createElement('div');
-      card.className = 'ytm-card';
-      const durationStr = formatTime(item.duration || 0);
-
-      const trackObj = {
-        id: 'yt_' + item.id,
-        title: item.title,
-        artist: item.artist,
-        album: 'YouTube Music Stream',
-        duration: item.duration,
-        cover: item.thumbnail,
-        url: `api/stream.php?id=${item.id}`,
-        ytUrl: item.url,
-        isOnline: true,
-        ytId: item.id
-      };
-
-      card.innerHTML = `
-        <div class="ytm-card-cover-wrap">
-          <img class="ytm-card-img" src="${escapeHTML(item.thumbnail || DEFAULT_COVER)}" alt="Cover" loading="lazy" />
-          <button class="ytm-card-play-btn" title="Putar Sekarang">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-          </button>
-          <span class="ytm-duration-badge">${durationStr}</span>
-        </div>
-        <div class="ytm-card-title" title="${escapeHTML(item.title)}">${escapeHTML(item.title)}</div>
-        <div class="ytm-card-artist" title="${escapeHTML(item.artist)}">${escapeHTML(item.artist)}</div>
-        <div class="ytm-card-actions">
-          <button class="btn-online-download" data-yt-id="${escapeHTML(item.id)}" title="Simpan ke Koleksi Lokal">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            <span>Simpan</span>
-          </button>
-          <button class="icon-btn queue-add-btn" title="Tambahkan ke Antrean" style="width: 28px; height: 28px;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-          </button>
-        </div>
-      `;
-
-      // Play on Card Click
-      card.addEventListener('click', (e) => {
-        if (e.target.closest('.btn-online-download') || e.target.closest('.queue-add-btn')) return;
-        window.PlaylistManager.playTrack(trackObj);
-        showToast(`Memutar: "${item.title}"`, '🌐');
-      });
-
-      // Add to Queue
-      const qBtn = card.querySelector('.queue-add-btn');
-      if (qBtn) {
-        qBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          window.PlaylistManager.addToQueue(trackObj);
-          showToast(`"${item.title}" ditambahkan ke antrean`, '➕');
-        });
-      }
-
-      // Download
-      const dlBtn = card.querySelector('.btn-online-download');
-      if (dlBtn) {
-        dlBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          downloadOnlineTrack(item, dlBtn);
-        });
-      }
-
-      ytmCardsGrid.appendChild(card);
-    });
-  }
-
-  function renderOnlineTable(tracks) {
-    if (!onlineTableBody) return;
-    onlineTableBody.innerHTML = '';
-
-    if (!tracks || tracks.length === 0) {
-      onlineTableBody.innerHTML = `
-        <tr>
-          <td colspan="5" style="text-align: center; padding: 48px 0; color: var(--text-secondary);">
-            🔍 Tidak ada lagu ditemukan. Coba ketik judul atau artis lain di atas.
-          </td>
-        </tr>
-      `;
-      return;
-    }
-
-    tracks.forEach((item, index) => {
-      const tr = document.createElement('tr');
-      tr.className = 'song-row';
-      const durationStr = formatTime(item.duration || 0);
-
-      tr.innerHTML = `
-        <td class="song-cell-index">
-          <span class="row-num">${index + 1}</span>
-          <button class="row-play-btn" title="Putar ${escapeHTML(item.title)}">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-          </button>
-        </td>
-        <td>
-          <div class="song-cell-main">
-            <img class="song-thumbnail" src="${escapeHTML(item.thumbnail || DEFAULT_COVER)}" alt="Cover" loading="lazy" />
-            <div class="song-info-stack">
-              <span class="song-cell-title" title="${escapeHTML(item.title)}">${escapeHTML(item.title)}</span>
-              <span class="song-cell-artist">${escapeHTML(item.artist)}</span>
-            </div>
-          </div>
-        </td>
-        <td class="col-album">
-          <span class="online-stream-badge">🌐 YouTube Stream</span>
-        </td>
-        <td>
-          <span class="song-cell-duration">${durationStr}</span>
-        </td>
-        <td style="text-align: right; padding-right: 14px;">
-          <div class="song-actions" style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
-            <button class="btn-online-download" data-yt-id="${escapeHTML(item.id)}" title="Download & Simpan ke Koleksi Lokal">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              <span>Simpan</span>
-            </button>
-            <button class="icon-btn queue-add-btn" title="Tambahkan ke Antrean">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-            </button>
-          </div>
-        </td>
-      `;
-
-      const trackObj = {
-        id: 'yt_' + item.id,
-        title: item.title,
-        artist: item.artist,
-        album: 'YouTube Music Stream',
-        duration: item.duration,
-        cover: item.thumbnail,
-        url: `api/stream.php?id=${item.id}`,
-        ytUrl: item.url,
-        isOnline: true,
-        ytId: item.id
-      };
-
-      tr.addEventListener('click', (e) => {
-        if (e.target.closest('.btn-online-download') || e.target.closest('.queue-add-btn')) return;
-        window.PlaylistManager.playTrack(trackObj);
-        showToast(`Memutar: "${item.title}"`, '🌐');
-      });
-
-      const qBtn = tr.querySelector('.queue-add-btn');
-      if (qBtn) {
-        qBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          window.PlaylistManager.addToQueue(trackObj);
-          showToast(`"${item.title}" ditambahkan ke antrean`, '➕');
-        });
-      }
-
-      const dlBtn = tr.querySelector('.btn-online-download');
-      if (dlBtn) {
-        dlBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          downloadOnlineTrack(item, dlBtn);
-        });
-      }
-
-      onlineTableBody.appendChild(tr);
-    });
-  }
-
-  async function downloadOnlineTrack(item, btnElement) {
-    if (btnElement) {
-      btnElement.disabled = true;
-      btnElement.innerHTML = '<span>⏳ Menyimpan...</span>';
-    }
-    showToast(`Mendownload "${item.title}" ke server...`, '📥');
-
-    try {
-      const res = await fetch('api/yt_download.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: item.url || `https://www.youtube.com/watch?v=${item.id}` })
-      });
-      const data = await res.json();
-      if (data.status === 'success' || data.status === 'already_exists') {
-        showToast(`"${item.title}" berhasil disimpan ke Koleksi Lokal! 🎉`, '✓');
-        if (btnElement) {
-          btnElement.innerHTML = '<span>✅ Tersimpan</span>';
-          btnElement.style.borderColor = '#10b981';
-          btnElement.style.color = '#10b981';
-        }
-        if (window.scanLibrary) window.scanLibrary(false);
-      } else {
-        showToast(data.message || 'Gagal mendownload lagu', '⚠️');
-        if (btnElement) {
-          btnElement.disabled = false;
-          btnElement.innerHTML = `<span>Simpan</span>`;
-        }
-      }
-    } catch (err) {
-      console.error('Download error:', err);
-      showToast('Terjadi kesalahan saat mendownload lagu', '⚠️');
-      if (btnElement) {
-        btnElement.disabled = false;
-        btnElement.innerHTML = `<span>Simpan</span>`;
-      }
-    }
-  }
-
-  // View Switcher Buttons (Grid vs List)
-  if (ytmViewGridBtn) {
-    ytmViewGridBtn.addEventListener('click', () => {
-      ytmCurrentView = 'grid';
-      updateYTMViewDisplay();
-    });
-  }
-  if (ytmViewListBtn) {
-    ytmViewListBtn.addEventListener('click', () => {
-      ytmCurrentView = 'list';
-      updateYTMViewDisplay();
-    });
-  }
-
-  // Search Input Events
-  if (onlineSearchSubmitBtn && onlineSearchInput) {
-    onlineSearchSubmitBtn.addEventListener('click', () => {
-      const q = onlineSearchInput.value.trim();
-      if (q) performOnlineSearch(q, `Hasil Pencarian: "${q}"`);
-    });
-    onlineSearchInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const q = onlineSearchInput.value.trim();
-        if (q) performOnlineSearch(q, `Hasil Pencarian: "${q}"`);
-      }
-    });
-  }
-
-  // Mood & Activity Category Chips
-  if (ytmMoodChips) {
-    ytmMoodChips.forEach((chip) => {
-      chip.addEventListener('click', () => {
-        ytmMoodChips.forEach((c) => c.classList.remove('active'));
-        chip.classList.add('active');
-        const query = chip.dataset.query;
-        const chipLabel = chip.textContent.trim();
-        if (onlineSearchInput) onlineSearchInput.value = query;
-        performOnlineSearch(query, `Pilihan: ${chipLabel}`);
-      });
-    });
-  }
 
   // Sort & Filter Bar
   const filterChips = document.querySelectorAll('.filter-chip');
@@ -1917,41 +1297,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Smooth Mouse Wheel & Drag-to-Scroll for Filter Chips
-  const filterChipsScrollContainer = document.querySelector('.filter-chips-scroll');
-  if (filterChipsScrollContainer) {
-    filterChipsScrollContainer.addEventListener('wheel', (e) => {
-      if (e.deltaY !== 0) {
-        e.preventDefault();
-        filterChipsScrollContainer.scrollLeft += e.deltaY * 0.8;
-      }
-    }, { passive: false });
-
-    let isDown = false;
-    let startX = 0, scrollStart = 0;
-    filterChipsScrollContainer.addEventListener('mousedown', (e) => {
-      isDown = true;
-      startX = e.pageX - filterChipsScrollContainer.offsetLeft;
-      scrollStart = filterChipsScrollContainer.scrollLeft;
-    });
-    filterChipsScrollContainer.addEventListener('mouseleave', () => { isDown = false; });
-    filterChipsScrollContainer.addEventListener('mouseup', () => { isDown = false; });
-    filterChipsScrollContainer.addEventListener('mousemove', (e) => {
-      if (!isDown) return;
-      e.preventDefault();
-      const x = e.pageX - filterChipsScrollContainer.offsetLeft;
-      const walk = (x - startX) * 1.5;
-      filterChipsScrollContainer.scrollLeft = scrollStart - walk;
-    });
-  }
-
   // View Toggle (Table vs Grid)
   viewToggleBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
       viewToggleBtns.forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
-      currentViewMode = btn.dataset.view || 'table';
-      renderCurrentView();
+      const mode = btn.dataset.view;
+      if (mode === 'grid') {
+        tableViewWrap.style.display = 'none';
+        songsGrid.style.display = 'grid';
+      } else {
+        tableViewWrap.style.display = 'table';
+        songsGrid.style.display = 'none';
+      }
     });
   });
 
@@ -2007,11 +1365,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Visualizer Mode Chips
+  const savedVisMode = localStorage.getItem('aura_vis_mode') || 'bars';
+  if (visualizer && savedVisMode !== 'bars' && ['bars', 'wave', 'radial'].includes(savedVisMode)) {
+    visualizer.setMode(savedVisMode);
+    visModeChips.forEach((c) => {
+      c.classList.toggle('active', c.dataset.mode === savedVisMode);
+    });
+  }
+
   visModeChips.forEach((chip) => {
     chip.addEventListener('click', () => {
       visModeChips.forEach((c) => c.classList.remove('active'));
       chip.classList.add('active');
-      if (visualizer) visualizer.setMode(chip.dataset.mode);
+      const mode = chip.dataset.mode;
+      if (visualizer) visualizer.setMode(mode);
+      localStorage.setItem('aura_vis_mode', mode);
     });
   });
 
@@ -2270,7 +1638,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Title & Artist
     pipCtx.fillStyle = '#ffffff';
     pipCtx.font = 'bold 22px "Plus Jakarta Sans", sans-serif';
-    pipCtx.fillText((currentSong ? currentSong.title : 'Aura Music').substring(0, 24), 160, 75);
+    pipCtx.fillText((currentSong ? currentSong.title : 'KasetKu').substring(0, 24), 160, 75);
 
     pipCtx.fillStyle = '#9ca3af';
     pipCtx.font = '500 15px "Plus Jakarta Sans", sans-serif';
@@ -2420,34 +1788,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.AudioCore.setVocalRemover(false);
       window.AudioCore.setHapticBass(false);
       window.AudioCore.set8DAudio(false);
-      window.AudioCore.setSurroundSound(false);
 
       if (mode === 'dolby') {
-        // Dolby 3D Spatial Surround Widener
-        if (dspSpeedSlider) {
-          dspSpeedSlider.value = 1.0;
-          dspSpeedVal.textContent = '1.0x';
-        }
+        // Dolby 3D Surround Virtualizer
+        dspSpeedSlider.value = 1.0;
+        dspSpeedVal.textContent = '1.0x';
         window.AudioCore.setPlaybackRate(1.0);
-        window.AudioCore.setReverb(false);
-        window.AudioCore.setSurroundSound(true, 0.85);
-        window.AudioCore.setBassBoost(5);
-        window.AudioCore.setTrebleBoost(4);
-        window.AudioCore.applyPreset('dolby');
-        showToast('Dolby 3D Surround Spatializer Aktif 🌐', '✨');
-      } else if (mode === 'concert') {
-        // Live Concert Hall & Stadium Reverb
-        if (dspSpeedSlider) {
-          dspSpeedSlider.value = 1.0;
-          dspSpeedVal.textContent = '1.0x';
-        }
-        window.AudioCore.setPlaybackRate(1.0);
-        window.AudioCore.setSurroundSound(false);
-        window.AudioCore.setReverb(true, 0.52, 'concert');
+        window.AudioCore.setReverb(true, 0.22);
         window.AudioCore.setBassBoost(7);
-        window.AudioCore.setTrebleBoost(3.5);
+        window.AudioCore.setTrebleBoost(6);
+        window.AudioCore.applyPreset('dolby');
+        showToast('Dolby 3D Surround Aktif 🌐', '✨');
+      } else if (mode === 'concert') {
+        // Live Concert Hall
+        dspSpeedSlider.value = 1.0;
+        dspSpeedVal.textContent = '1.0x';
+        window.AudioCore.setPlaybackRate(1.0);
+        window.AudioCore.setReverb(true, 0.55);
+        window.AudioCore.setBassBoost(5);
+        window.AudioCore.setTrebleBoost(3);
         window.AudioCore.applyPreset('concert');
-        showToast('Live Concert Hall Mode Aktif 🏟️', '✨');
+        showToast('Live Concert Hall Stage Aktif 🏛️', '✨');
       } else if (mode === '8d') {
         // 8D Spatial Audio 360 rotation
         const speed = parseFloat(dsp8dSpeedSlider ? dsp8dSpeedSlider.value : 1.0);
@@ -2461,7 +1822,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.AudioCore.setReverb(true, 0.65);
         window.AudioCore.setBassBoost(6);
         window.AudioCore.applyPreset('flat');
-        showToast('Mode Slowed + Reverb Aktif 🌌', '✨');
+        showToast('Mode Slowed + Reverb Aktif 💧', '✨');
       } else if (mode === 'nightcore') {
         // Nightcore
         dspSpeedSlider.value = 1.25;
@@ -2499,6 +1860,86 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.AudioCore.setHapticBass(true);
         window.AudioCore.setBassBoost(8);
         showToast('Haptic Bass Vibration Aktif (HP Bergetar) 📳', '✨');
+      } else if (mode === 'edm') {
+        // EDM Festival
+        dspSpeedSlider.value = 1.0;
+        dspSpeedVal.textContent = '1.0x';
+        window.AudioCore.setPlaybackRate(1.0);
+        window.AudioCore.setReverb(true, 0.18);
+        window.AudioCore.setBassBoost(12);
+        window.AudioCore.setTrebleBoost(8);
+        window.AudioCore.applyPreset('electronic');
+        showToast('Mode EDM Festival Sound Aktif 📢⚡', '✨');
+      } else if (mode === 'vinyl_lofi') {
+        // Vinyl Lo-Fi Chill
+        dspSpeedSlider.value = 0.94;
+        dspSpeedVal.textContent = '0.94x';
+        window.AudioCore.setPlaybackRate(0.94);
+        window.AudioCore.setReverb(true, 0.25);
+        window.AudioCore.setBassBoost(6);
+        window.AudioCore.setTrebleBoost(-5);
+        window.AudioCore.setAmbientSound('vinyl', 0.4);
+        showToast('Vinyl Lo-Fi Chill Aktif ☕📼', '✨');
+      } else if (mode === 'cathedral') {
+        // Cathedral 3D Spatial
+        dspSpeedSlider.value = 1.0;
+        dspSpeedVal.textContent = '1.0x';
+        window.AudioCore.setPlaybackRate(1.0);
+        window.AudioCore.setReverb(true, 0.85);
+        window.AudioCore.setBassBoost(6);
+        window.AudioCore.setTrebleBoost(4);
+        window.AudioCore.applyPreset('concert');
+        showToast('Cathedral 3D Spatial Echo Aktif ⛪', '✨');
+      } else if (mode === 'podcast') {
+        // Podcast Broadcast Voice
+        dspSpeedSlider.value = 1.0;
+        dspSpeedVal.textContent = '1.0x';
+        window.AudioCore.setPlaybackRate(1.0);
+        window.AudioCore.setReverb(false);
+        window.AudioCore.setBassBoost(0);
+        window.AudioCore.setTrebleBoost(3);
+        window.AudioCore.applyPreset('vocal');
+        showToast('Podcast Broadcast Clarity Aktif 🎙️', '✨');
+      } else if (mode === 'asmr') {
+        // ASMR Binaural Whisper
+        dspSpeedSlider.value = 1.0;
+        dspSpeedVal.textContent = '1.0x';
+        window.AudioCore.setPlaybackRate(1.0);
+        window.AudioCore.setReverb(true, 0.12);
+        window.AudioCore.setBassBoost(-2);
+        window.AudioCore.setTrebleBoost(10);
+        window.AudioCore.applyPreset('hires');
+        showToast('ASMR Binaural Detail Aktif 🍃', '✨');
+      } else if (mode === 'gaming') {
+        // Gaming FPS Surround
+        dspSpeedSlider.value = 1.0;
+        dspSpeedVal.textContent = '1.0x';
+        window.AudioCore.setPlaybackRate(1.0);
+        window.AudioCore.setReverb(false);
+        window.AudioCore.setBassBoost(6);
+        window.AudioCore.setTrebleBoost(9);
+        window.AudioCore.applyPreset('dolby');
+        showToast('Gaming FPS Surround Footsteps Aktif 🎯', '✨');
+      } else if (mode === 'vintage_radio') {
+        // Vintage Radio AM
+        dspSpeedSlider.value = 1.0;
+        dspSpeedVal.textContent = '1.0x';
+        window.AudioCore.setPlaybackRate(1.0);
+        window.AudioCore.setReverb(false);
+        window.AudioCore.setBassBoost(-6);
+        window.AudioCore.setTrebleBoost(-6);
+        window.AudioCore.applyPreset('tube');
+        showToast('Vintage Radio AM Broadcast Aktif 📻', '✨');
+      } else if (mode === 'metal') {
+        // Heavy Metal Rock
+        dspSpeedSlider.value = 1.0;
+        dspSpeedVal.textContent = '1.0x';
+        window.AudioCore.setPlaybackRate(1.0);
+        window.AudioCore.setReverb(false);
+        window.AudioCore.setBassBoost(10);
+        window.AudioCore.setTrebleBoost(7);
+        window.AudioCore.applyPreset('rock');
+        showToast('Heavy Metal Rock Raw Power Aktif 🎸', '✨');
       } else {
         // Clean
         dspSpeedSlider.value = 1.0;
@@ -3056,6 +2497,191 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // ==========================================
+  // YOUTUBE MUSIC ONLINE STREAMING CONTROLLER
+  // ==========================================
+  let isYtOnlineInitialized = false;
+
+  function initYouTubeMusicOnline() {
+    const ytSearchInput = document.getElementById('yt-online-search-input');
+    const ytSearchBtn = document.getElementById('yt-online-search-btn');
+    const ytLoading = document.getElementById('yt-online-loading');
+    const ytGrid = document.getElementById('yt-online-results-grid');
+    const ytTrendChips = document.querySelectorAll('.yt-trend-chip');
+
+    if (!ytSearchInput || !ytSearchBtn || !ytGrid) return;
+
+    if (!isYtOnlineInitialized) {
+      isYtOnlineInitialized = true;
+
+      ytSearchBtn.addEventListener('click', () => {
+        const q = (ytSearchInput.value || '').trim();
+        if (q) performYtOnlineSearch(q);
+      });
+
+      ytSearchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const q = (ytSearchInput.value || '').trim();
+          if (q) performYtOnlineSearch(q);
+        }
+      });
+
+      ytTrendChips.forEach((chip) => {
+        chip.addEventListener('click', () => {
+          const q = chip.dataset.query;
+          if (q) {
+            ytSearchInput.value = q;
+            performYtOnlineSearch(q);
+          }
+        });
+      });
+
+      // Centralized action handler for YT cards
+      ytGrid.addEventListener('click', async (e) => {
+        const playBtn = e.target.closest('.yt-card-cover-wrap') || e.target.closest('.yt-btn-stream');
+        const saveBtn = e.target.closest('.yt-btn-save');
+        const card = e.target.closest('.yt-card');
+        if (!card) return;
+
+        const songId = card.dataset.id;
+        const songTitle = card.dataset.title;
+        const songArtist = card.dataset.artist;
+        const songCover = card.dataset.cover;
+        const songUrl = card.dataset.url;
+
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          saveBtn.innerHTML = '⏳ Unduh...';
+          showToast(`Mengunduh "${songTitle}" ke library...`, '⬇️');
+
+          try {
+            const res = await fetch('api/yt_download.php', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url: songUrl })
+            });
+            const data = await res.json();
+            if (data.status === 'success' || data.status === 'already_exists') {
+              showToast(`"${songTitle}" berhasil disimpan ke Library! 🎉`, '✅');
+              saveBtn.innerHTML = '✓ Tersimpan';
+              await fetchLibrary(true);
+            } else {
+              showToast(`Gagal mengunduh: ${data.message}`, '⚠️');
+              saveBtn.disabled = false;
+              saveBtn.innerHTML = '+ Simpan';
+            }
+          } catch (err) {
+            showToast('Gagal terhubung ke downloader server', '⚠️');
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '+ Simpan';
+          }
+          return;
+        }
+
+        if (playBtn) {
+          showToast(`Memuat stream audio "${songTitle}"... ⏳`, '🎵');
+          try {
+            const res = await fetch(`api/yt_stream.php?action=info&id=${encodeURIComponent(songId)}`);
+            const data = await res.json();
+            if (data.status === 'success') {
+              const audioUrl = `api/yt_stream.php?action=audio&id=${encodeURIComponent(songId)}`;
+              const onlineTrack = {
+                id: 'yt_' + songId,
+                title: data.title || songTitle,
+                artist: data.artist || songArtist,
+                album: 'YouTube Music Stream',
+                genre: 'Streaming',
+                cover: data.cover || songCover || DEFAULT_COVER,
+                url: audioUrl,
+                is_online: true,
+                duration: data.duration || 0
+              };
+
+              // Queue & Instant Play
+              window.PlaylistManager.playTrack(onlineTrack, [onlineTrack]);
+              showToast(`Memutar Online: ${onlineTrack.title} 🎧`, '▶️');
+            } else {
+              showToast(`Gagal memuat stream audio: ${data.message || 'Error'}`, '⚠️');
+            }
+          } catch (err) {
+            showToast('Gagal memuat streaming audio YouTube', '⚠️');
+          }
+        }
+      });
+    }
+
+    // Auto-search default trending if empty
+    if (ytGrid.children.length === 0) {
+      performYtOnlineSearch('Top Indonesia Hits 2026');
+    }
+
+    async function performYtOnlineSearch(query) {
+      ytLoading.style.display = 'block';
+      ytGrid.style.display = 'none';
+
+      try {
+        const res = await fetch(`api/yt_search.php?q=${encodeURIComponent(query)}&limit=16`);
+        const data = await res.json();
+        ytLoading.style.display = 'none';
+        ytGrid.style.display = 'grid';
+
+        if (data.status === 'success' && data.results && data.results.length > 0) {
+          ytGrid.innerHTML = data.results.map((item) => `
+            <div class="yt-card" data-id="${escapeHTML(item.id)}" data-title="${escapeHTML(item.title)}" data-artist="${escapeHTML(item.artist)}" data-cover="${escapeHTML(item.cover)}" data-url="${escapeHTML(item.url)}">
+              <div class="yt-card-cover-wrap">
+                <img class="yt-card-cover-img" src="${escapeHTML(item.cover)}" alt="${escapeHTML(item.title)}" loading="lazy" onerror="this.src='${DEFAULT_COVER}'" />
+                <span class="yt-card-duration">${escapeHTML(item.duration)}</span>
+                <div class="yt-card-play-btn" title="Putar Sekarang">
+                  <div class="yt-card-play-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <div class="yt-card-info">
+                <span class="yt-card-title" title="${escapeHTML(item.title)}">${escapeHTML(item.title)}</span>
+                <span class="yt-card-artist">${escapeHTML(item.artist)}</span>
+              </div>
+              <div class="yt-card-actions">
+                <button class="yt-btn-stream" title="Putar audio streaming langsung">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                  <span>Putar</span>
+                </button>
+                <button class="yt-btn-save" title="Unduh ke Koleksi Lokal MP3">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                  <span>Simpan</span>
+                </button>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          ytGrid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: var(--text-tertiary);">
+              <p style="font-size: 1.1rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Tidak ada lagu ditemukan</p>
+              <p style="font-size: 0.85rem;">Coba gunakan kata kunci artis atau judul yang lebih spesifik.</p>
+            </div>
+          `;
+        }
+      } catch (err) {
+        ytLoading.style.display = 'none';
+        ytGrid.style.display = 'grid';
+        ytGrid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; color: #ef4444;">
+            <p>Gagal memuat hasil pencarian YouTube: ${err.message}</p>
+          </div>
+        `;
+      }
+    }
+  }
+
   // Create Playlist Modal
   createPlaylistBtn.addEventListener('click', () => {
     newPlaylistModal.classList.add('open');
@@ -3194,8 +2820,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     editSongTitleInput.focus();
   }
 
-  let selectedEnrichCoverUrl = '';
-
   if (autoEnrichBtn) {
     autoEnrichBtn.addEventListener('click', async () => {
       const title = editSongTitleInput.value.trim();
@@ -3213,29 +2837,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       try {
-        const res = await fetch(`api/enrich_metadata.php?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`);
+        const res = await fetch('api/enrich_metadata.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, artist })
+        });
         const data = await res.json();
-        const matches = (data.status === 'success') ? (data.data || data.results || []) : [];
-        if (matches.length > 0) {
+        if (data.status === 'success' && data.results && data.results.length > 0) {
           enrichResultsWrap.innerHTML = '';
-          matches.forEach((match) => {
+          data.results.forEach((match) => {
             const card = document.createElement('div');
             card.className = 'enrich-item-card';
-            const cArt = match.cover_url || match.cover_hd || match.cover || DEFAULT_COVER;
             card.innerHTML = `
-              <img src="${escapeHTML(cArt)}" class="enrich-item-thumb" alt="Art" onerror="this.src='${DEFAULT_COVER}'" />
-              <div style="flex: 1; min-width: 0;">
-                <div class="enrich-item-title">${escapeHTML(match.title)}</div>
-                <div class="enrich-item-subtitle">${escapeHTML(match.artist)} • ${escapeHTML(match.album || 'Single')} (${match.year || ''})</div>
+              <img src="${escapeHTML(match.cover_hd || match.cover)}" alt="Art" />
+              <div class="enrich-item-info">
+                <span class="enrich-item-title">${escapeHTML(match.title)}</span>
+                <span class="enrich-item-meta">${escapeHTML(match.artist)} • ${escapeHTML(match.album || '')} (${match.year || ''})</span>
               </div>
-              <button class="btn-subtle-scan" style="padding: 4px 10px; font-size: 0.75rem; flex-shrink: 0;">Pilih</button>
+              <button class="enrich-apply-btn">Pilih</button>
             `;
-            card.addEventListener('click', () => {
-              editSongTitleInput.value = match.title || title;
-              editSongArtistInput.value = match.artist || artist;
+            card.querySelector('.enrich-apply-btn').addEventListener('click', () => {
+              editSongTitleInput.value = match.title;
+              editSongArtistInput.value = match.artist;
               if (match.album) editSongAlbumInput.value = match.album;
               if (match.genre) editSongGenreInput.value = match.genre;
-              selectedEnrichCoverUrl = match.cover_url || match.cover_hd || '';
               showToast('Data & Cover HD dipilih! Klik Simpan Perubahan', '✨');
               enrichResultsWrap.style.display = 'none';
             });
@@ -3257,7 +2882,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (editMetadataCloseBtn) {
     editMetadataCloseBtn.addEventListener('click', () => {
       editMetadataModal.classList.remove('open');
-      selectedEnrichCoverUrl = '';
     });
   }
 
@@ -3286,8 +2910,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             title: title,
             artist: artist,
             album: album,
-            genre: genre,
-            cover_url: selectedEnrichCoverUrl
+            genre: genre
           })
         });
 
@@ -3295,7 +2918,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (data.status === 'success' && data.song) {
           showToast(data.message || 'Metadata berhasil diperbarui!', '✓');
           editMetadataModal.classList.remove('open');
-          selectedEnrichCoverUrl = '';
 
           // Update in-memory song in PlaylistManager
           const songIdx = window.PlaylistManager.library.findIndex((s) => s.id === id);
@@ -3320,7 +2942,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               navigator.mediaSession.metadata = new MediaMetadata({
                 title: data.song.title,
                 artist: data.song.artist,
-                album: data.song.album || 'Aura Music',
+                album: data.song.album || 'KasetKu',
                 artwork: [
                   { src: data.song.cover || DEFAULT_COVER, sizes: '512x512', type: 'image/png' }
                 ]
@@ -3615,169 +3237,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // ==========================================
-  // MOBILE SONG ACTIONS BOTTOM SHEET
-  // ==========================================
-  const songActionsModal = document.getElementById('song-actions-modal');
-  const songActionsCloseBtn = document.getElementById('song-actions-close-btn');
-  const songActionsThumb = document.getElementById('song-actions-thumb');
-  const songActionsTitle = document.getElementById('song-actions-title');
-  const songActionsArtist = document.getElementById('song-actions-artist');
-  const songActionsList = document.getElementById('song-actions-list');
-
-  let currentActionsSong = null;
-
-  async function openSongActionsSheet(song) {
-    if (!song) return;
-    currentActionsSong = song;
-    const coverSrc = getSafeCoverUrl(song);
-    if (songActionsThumb) songActionsThumb.src = coverSrc;
-    if (songActionsTitle) songActionsTitle.textContent = song.title;
-    if (songActionsArtist) songActionsArtist.textContent = song.artist || 'Unknown Artist';
-
-    const isLiked = window.PlaylistManager.isLiked(song.id);
-    const isSaved = song.isOffline || (window.OfflineDB && (await window.OfflineDB.isSaved(song.id)));
-    const isInsideCustomPlaylist = currentNavTab === 'playlist' && currentActivePlaylistId && currentActivePlaylistId !== 'favorites';
-
-    if (songActionsList) {
-      songActionsList.innerHTML = `
-        <button class="sheet-action-item" data-sheet-action="play">
-          <div class="sheet-action-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-          </div>
-          <span>Putar Sekarang</span>
-        </button>
-        <button class="sheet-action-item ${isLiked ? 'liked' : ''}" data-sheet-action="like">
-          <div class="sheet-action-icon" style="${isLiked ? 'color: var(--accent-like);' : ''}">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-            </svg>
-          </div>
-          <span>${isLiked ? 'Hapus dari Favorit (Liked)' : 'Tambah ke Favorit (Liked)'}</span>
-        </button>
-        <button class="sheet-action-item" data-sheet-action="add-pl">
-          <div class="sheet-action-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-          </div>
-          <span>Tambahkan ke Playlist</span>
-        </button>
-        <button class="sheet-action-item ${isSaved ? 'saved' : ''}" data-sheet-action="offline">
-          <div class="sheet-action-icon" style="${isSaved ? 'color: #10b981;' : ''}">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-          </div>
-          <span>${isSaved ? 'Hapus dari Penyimpanan Offline' : 'Simpan Offline (Putar Tanpa Internet)'}</span>
-        </button>
-        <button class="sheet-action-item" data-sheet-action="trim">
-          <div class="sheet-action-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="6" cy="6" r="3"></circle>
-              <circle cx="6" cy="18" r="3"></circle>
-              <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
-              <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
-              <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
-            </svg>
-          </div>
-          <span>Potong Ringtone / Audio Trimmer</span>
-        </button>
-        <button class="sheet-action-item" data-sheet-action="lrc">
-          <div class="sheet-action-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
-              <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
-              <path d="M2 2l7.586 7.586"></path>
-            </svg>
-          </div>
-          <span>Studio Buat Lirik Sinkron (.LRC)</span>
-        </button>
-        <button class="sheet-action-item" data-sheet-action="edit-meta">
-          <div class="sheet-action-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 20h9"></path>
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-            </svg>
-          </div>
-          <span>Edit Info Lagu & Tag ID3</span>
-        </button>
-        ${isInsideCustomPlaylist ? `
-          <button class="sheet-action-item danger" data-sheet-action="remove-pl" style="color: #ef4444;">
-            <div class="sheet-action-icon" style="color: #ef4444;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </div>
-            <span>Hapus dari Playlist Ini</span>
-          </button>
-        ` : ''}
-      `;
-    }
-
-    if (songActionsModal) songActionsModal.classList.add('open');
-  }
-
-  if (songActionsCloseBtn) {
-    songActionsCloseBtn.addEventListener('click', () => {
-      if (songActionsModal) songActionsModal.classList.remove('open');
-    });
-  }
-
-  if (songActionsModal) {
-    songActionsModal.addEventListener('click', async (e) => {
-      if (e.target === songActionsModal) {
-        songActionsModal.classList.remove('open');
-        return;
-      }
-      const item = e.target.closest('.sheet-action-item');
-      if (!item || !currentActionsSong) return;
-
-      const action = item.dataset.sheetAction;
-      songActionsModal.classList.remove('open');
-
-      if (action === 'play') {
-        window.PlaylistManager.playTrack(currentActionsSong, currentDisplayedSongs);
-      } else if (action === 'like') {
-        const liked = await window.PlaylistManager.toggleLike(currentActionsSong.id);
-        showToast(liked ? 'Ditambahkan ke Liked Songs' : 'Dihapus dari Liked Songs');
-        renderCurrentView();
-      } else if (action === 'add-pl') {
-        openAddToPlaylistModal(currentActionsSong);
-      } else if (action === 'offline') {
-        const isSaved = await window.OfflineDB.isSaved(currentActionsSong.id);
-        if (isSaved) {
-          await window.OfflineDB.removeTrack(currentActionsSong.id);
-          showToast(`Lagu offline "${currentActionsSong.title}" dihapus`, '🗑️');
-        } else {
-          showToast('Mengunduh lagu untuk offline...', '⏳');
-          try {
-            await window.OfflineDB.saveTrack(currentActionsSong);
-            showToast(`"${currentActionsSong.title}" tersimpan offline!`, '💾');
-          } catch (err) {
-            showToast('Gagal mengunduh offline: ' + err.message, '⚠️');
-          }
-        }
-        if (currentNavTab === 'offline') renderCurrentView();
-      } else if (action === 'trim') {
-        openTrimmerModal(currentActionsSong);
-      } else if (action === 'lrc') {
-        openLrcMakerModal(currentActionsSong);
-      } else if (action === 'edit-meta') {
-        openEditMetadataModal(currentActionsSong);
-      } else if (action === 'remove-pl') {
-        await window.PlaylistManager.removeSongFromPlaylist(currentActivePlaylistId, currentActionsSong.id);
-        showToast('Lagu dihapus dari playlist', '✓');
-        renderSidebarPlaylists();
-        renderCurrentView();
-      }
-    });
-  }
-
   // Global Keyboard Shortcuts
   const shortcutsModal = document.getElementById('shortcuts-modal');
   const shortcutsCloseBtn = document.getElementById('shortcuts-close-btn');
@@ -3789,9 +3248,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.addEventListener('keydown', (e) => {
     // Skip when typing in inputs
     if (['input', 'textarea'].includes(e.target.tagName.toLowerCase())) return;
-    // Skip when any modal dialog is open
-    const openModal = document.querySelector('.modal-overlay.open');
-    if (openModal) return;
+    // Skip when modal is open
+    const loginModalEl = document.getElementById('login-modal');
+    if (loginModalEl && loginModalEl.classList.contains('open')) return;
 
     if (e.code === 'Space') {
       e.preventDefault();
@@ -3953,7 +3412,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (isPlaying || isDownloading) {
       savePlaybackSessionState();
       e.preventDefault();
-      e.returnValue = 'Musik atau pengunduhan sedang aktif. Yakin ingin menutup Aura Music?';
+      e.returnValue = 'Musik atau pengunduhan sedang aktif. Yakin ingin menutup KasetKu?';
       return e.returnValue;
     }
   });
@@ -3982,12 +3441,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // GLOBAL ERROR BOUNDARY (CRASH SHIELD)
   // ==========================================
   window.addEventListener('unhandledrejection', (event) => {
-    console.warn('[Aura Crash Shield] Handled unhandledrejection:', event.reason);
+    console.warn('[KasetKu Crash Shield] Handled unhandledrejection:', event.reason);
     event.preventDefault();
   });
 
   window.addEventListener('error', (event) => {
-    console.warn('[Aura Crash Shield] Handled uncaught exception:', event.message);
+    console.warn('[KasetKu Crash Shield] Handled uncaught exception:', event.message);
   });
 
   // ==========================================
@@ -4092,13 +3551,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js')
-        .then(() => console.log('Aura Music Service Worker Registered'))
-        .catch((err) => console.warn('Service Worker registration failed:', err));
+        .then(() => console.log('KasetKu Service Worker Registered'))
+        .catch((err) => console.warn('KasetKu Service Worker registration failed:', err));
     });
   }
 
   let deferredPrompt = null;
   const pwaInstallBtn = document.getElementById('pwa-install-btn');
+  const installBtnAlt = document.getElementById('btn-install-app');
 
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -4110,7 +3570,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         deferredPrompt.prompt();
         const choice = await deferredPrompt.userChoice;
         if (choice.outcome === 'accepted') {
-          showToast('Aplikasi Aura Music berhasil di-install!', '✓');
+          showToast('Aplikasi KasetKu berhasil di-install!', '✓');
           pwaInstallBtn.style.display = 'none';
         }
         deferredPrompt = null;
@@ -4118,621 +3578,56 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  window.addEventListener('appinstalled', () => {
-    if (pwaInstallBtn) pwaInstallBtn.style.display = 'none';
-    showToast('NadaKita siap digunakan sebagai aplikasi!', '✨');
-  });
-
   // ==========================================
-  // MINI FLOATING SYNCHRONIZED LYRICS TICKER
+  // THEME ACCENT PALETTE CONTROLLER
   // ==========================================
-  const playerMiniLyrics = document.getElementById('player-mini-lyrics');
-  const miniLyricsText = document.getElementById('mini-lyrics-text');
+  function initThemePalette() {
+    if (!themePaletteBtn || !themePaletteDropdown) return;
 
-  if (window.LyricsEngine) {
-    window.LyricsEngine.onActiveLineChange = (lineText) => {
-      if (!playerMiniLyrics || !miniLyricsText) return;
-      if (lineText && lineText.trim()) {
-        miniLyricsText.textContent = lineText.trim();
-        playerMiniLyrics.style.display = 'flex';
-      } else {
-        playerMiniLyrics.style.display = 'none';
-      }
-    };
-  }
+    const currentTheme = window.AmbientColor ? window.AmbientColor.getTheme() : 'adaptive';
+    themeChipBtns.forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.theme === currentTheme);
+    });
 
-  if (playerMiniLyrics) {
-    playerMiniLyrics.addEventListener('click', () => {
-      if (rightPanel) {
-        rightPanel.classList.add('open');
-        panelTabBtns.forEach((b) => b.classList.toggle('active', b.dataset.tab === 'lyrics'));
-        if (lyricsView) lyricsView.style.display = 'block';
-        if (visualizerView) visualizerView.style.display = 'none';
-        if (queueView) queueView.style.display = 'none';
+    themePaletteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      themePaletteDropdown.classList.toggle('open');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!themeSwitcherWrap || !themeSwitcherWrap.contains(e.target)) {
+        themePaletteDropdown.classList.remove('open');
       }
     });
-  }
 
-  // ==========================================
-  // THEME ACCENT COLOR PALETTE CONTROLLER
-  // ==========================================
-  const themeModal = document.getElementById('theme-modal');
-  const themePaletteBtn = document.getElementById('theme-palette-btn');
-  const themeCloseBtn = document.getElementById('theme-close-btn');
-  const themePresetCards = document.querySelectorAll('.theme-preset-card');
+    themeChipBtns.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const selectedTheme = btn.dataset.theme;
+        themeChipBtns.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
 
-  function applyTheme(themeName) {
-    document.documentElement.setAttribute('data-theme', themeName);
-    try {
-      localStorage.setItem('nadakita_theme', themeName);
-    } catch (e) {}
-    themePresetCards.forEach((card) => {
-      card.classList.toggle('active', card.dataset.themeVal === themeName);
-    });
-  }
-
-  // Restore saved theme on startup
-  const savedTheme = localStorage.getItem('nadakita_theme') || 'blue';
-  applyTheme(savedTheme);
-
-  if (themePaletteBtn) {
-    themePaletteBtn.addEventListener('click', () => {
-      if (themeModal) themeModal.classList.add('open');
-    });
-  }
-  if (themeCloseBtn) {
-    themeCloseBtn.addEventListener('click', () => {
-      if (themeModal) themeModal.classList.remove('open');
-    });
-  }
-  if (themeModal) {
-    themeModal.addEventListener('click', (e) => {
-      if (e.target === themeModal) themeModal.classList.remove('open');
-    });
-  }
-
-  themePresetCards.forEach((card) => {
-    card.addEventListener('click', () => {
-      const themeVal = card.dataset.themeVal;
-      applyTheme(themeVal);
-      const name = card.querySelector('.theme-preset-name')?.textContent || themeVal;
-      showToast(`Tema warna diubah ke "${name}"`, '🎨');
-    });
-  });
-
-  // ==========================================
-  // NADAKITA WRAPPED HTML5 CANVAS EXPORTER
-  // ==========================================
-  const exportWrappedBtn = document.getElementById('export-wrapped-btn');
-
-  async function exportNadaKitaWrappedCard() {
-    showToast('Menyiapkan gambar Wrapped...', '🎨');
-    const summary = window.PlaylistManager.getStatsSummary();
-    
-    // Canvas dimensions: 1080x1920 (9:16 Story format for Instagram/WhatsApp)
-    const canvas = document.createElement('canvas');
-    canvas.width = 1080;
-    canvas.height = 1920;
-    const ctx = canvas.getContext('2d');
-
-    // 1. Dark Background with Vibrant Mesh Gradients
-    const bgGrad = ctx.createLinearGradient(0, 0, 1080, 1920);
-    bgGrad.addColorStop(0, '#0a0d14');
-    bgGrad.addColorStop(0.4, '#0f1422');
-    bgGrad.addColorStop(1, '#05070a');
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, 1080, 1920);
-
-    // Accent Orbs
-    const currentTheme = localStorage.getItem('nadakita_theme') || 'blue';
-    let accent1 = '#3b82f6', accent2 = '#8b5cf6';
-    if (currentTheme === 'purple') { accent1 = '#a855f7'; accent2 = '#ec4899'; }
-    else if (currentTheme === 'emerald') { accent1 = '#10b981'; accent2 = '#06b6d4'; }
-    else if (currentTheme === 'amber') { accent1 = '#f59e0b'; accent2 = '#ef4444'; }
-    else if (currentTheme === 'pink') { accent1 = '#ec4899'; accent2 = '#a855f7'; }
-
-    // Top Radial Orb
-    const orb1 = ctx.createRadialGradient(250, 250, 50, 250, 250, 600);
-    orb1.addColorStop(0, accent1 + '55');
-    orb1.addColorStop(1, 'transparent');
-    ctx.fillStyle = orb1;
-    ctx.fillRect(0, 0, 1080, 1000);
-
-    // Bottom Radial Orb
-    const orb2 = ctx.createRadialGradient(850, 1600, 50, 850, 1600, 700);
-    orb2.addColorStop(0, accent2 + '44');
-    orb2.addColorStop(1, 'transparent');
-    ctx.fillStyle = orb2;
-    ctx.fillRect(0, 1000, 1080, 920);
-
-    // Helper: Rounded Rect
-    function roundRect(x, y, w, h, r, fill, stroke) {
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.arcTo(x + w, y, x + w, y + h, r);
-      ctx.arcTo(x + w, y + h, x, y + h, r);
-      ctx.arcTo(x, y + h, x, y, r);
-      ctx.arcTo(x, y, x + w, y, r);
-      ctx.closePath();
-      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
-      if (stroke) { ctx.strokeStyle = stroke; ctx.stroke(); }
-    }
-
-    // 2. Header Brand & Title
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '800 52px "Plus Jakarta Sans", sans-serif';
-    ctx.fillText('NADAKITA', 80, 140);
-
-    ctx.fillStyle = accent1;
-    ctx.font = '700 26px "Plus Jakarta Sans", sans-serif';
-    ctx.fillText('AUDIO WRAPPED • 2026', 80, 185);
-
-    // Persona Capsule
-    roundRect(80, 230, 480, 64, 32, 'rgba(255,255,255,0.08)', 'rgba(255,255,255,0.15)');
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '600 28px "Plus Jakarta Sans", sans-serif';
-    ctx.fillText(summary.persona || '🎧 Penikmat Musik Aktif', 110, 272);
-
-    // 3. Spotlight #1 Favorite Song Card
-    roundRect(80, 330, 920, 360, 28, 'rgba(255,255,255,0.05)', 'rgba(255,255,255,0.12)');
-
-    ctx.fillStyle = accent1;
-    ctx.font = '800 24px "Plus Jakarta Sans", sans-serif';
-    ctx.fillText('🏆 LAGU PALING SERING DIPUTAR', 120, 385);
-
-    const fav = summary.favoriteSong;
-    const favTitle = fav?.song?.title || 'Belum ada lagu';
-    const favArtist = fav?.song?.artist || 'NadaKita Player';
-    const favCount = fav?.count ? `${fav.count}x Diputar` : '0x Diputar';
-
-    // Draw Album Cover on Canvas
-    let coverLoaded = false;
-    const coverUrl = fav?.song ? getSafeCoverUrl(fav.song) : DEFAULT_COVER;
-    if (coverUrl && !coverUrl.endsWith('.svg')) {
-      try {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        await new Promise((resolve) => {
-          img.onload = () => {
-            ctx.save();
-            ctx.beginPath();
-            if (ctx.roundRect) {
-              ctx.roundRect(120, 420, 220, 220, 20);
-            } else {
-              ctx.rect(120, 420, 220, 220);
-            }
-            ctx.clip();
-            ctx.drawImage(img, 120, 420, 220, 220);
-            ctx.restore();
-            coverLoaded = true;
-            resolve();
-          };
-          img.onerror = () => resolve();
-          img.src = coverUrl;
-        });
-      } catch (e) {}
-    }
-
-    if (!coverLoaded) {
-      roundRect(120, 420, 220, 220, 20, 'rgba(59,130,246,0.2)', 'rgba(59,130,246,0.4)');
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '80px sans-serif';
-      ctx.fillText('🎵', 180, 560);
-    }
-
-    // Song Title & Artist text
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '800 40px "Plus Jakarta Sans", sans-serif';
-    const truncatedTitle = favTitle.length > 22 ? favTitle.substring(0, 20) + '...' : favTitle;
-    ctx.fillText(truncatedTitle, 370, 490);
-
-    ctx.fillStyle = '#9ca3af';
-    ctx.font = '600 30px "Plus Jakarta Sans", sans-serif';
-    ctx.fillText(favArtist, 370, 545);
-
-    // Play count pill
-    roundRect(370, 580, 220, 48, 24, accent1 + '33', accent1);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '700 24px "Plus Jakarta Sans", sans-serif';
-    ctx.fillText(`🔥 ${favCount}`, 395, 613);
-
-    // 4. 3 KPI Metric Cards
-    const kpis = [
-      { num: summary.formattedTime || '0 Menit', label: 'Waktu Dengar', icon: '⏱️' },
-      { num: `${summary.totalPlays || 0}`, label: 'Total Diputar', icon: '▶️' },
-      { num: `${summary.topArtists?.length || 0}`, label: 'Musisi Unik', icon: '🎤' }
-    ];
-
-    kpis.forEach((kpi, idx) => {
-      const x = 80 + idx * 320;
-      roundRect(x, 730, 280, 190, 20, 'rgba(255,255,255,0.05)', 'rgba(255,255,255,0.1)');
-      ctx.font = '36px sans-serif';
-      ctx.fillText(kpi.icon, x + 24, 785);
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '800 38px "Plus Jakarta Sans", sans-serif';
-      ctx.fillText(kpi.num, x + 24, 845);
-
-      ctx.fillStyle = '#9ca3af';
-      ctx.font = '600 22px "Plus Jakarta Sans", sans-serif';
-      ctx.fillText(kpi.label, x + 24, 885);
-    });
-
-    // 5. Top 5 Tracks Leaderboard
-    roundRect(80, 960, 920, 540, 24, 'rgba(255,255,255,0.04)', 'rgba(255,255,255,0.08)');
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '800 32px "Plus Jakarta Sans", sans-serif';
-    ctx.fillText('🔥 TOP 5 LAGU FAVORIT', 120, 1025);
-
-    const top5 = (summary.topTracks || []).slice(0, 5);
-    const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
-
-    top5.forEach((item, idx) => {
-      const y = 1080 + idx * 80;
-      ctx.font = '30px sans-serif';
-      ctx.fillText(medals[idx] || `${idx + 1}`, 120, y + 10);
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '700 28px "Plus Jakarta Sans", sans-serif';
-      const tText = item.song?.title || 'Unknown';
-      ctx.fillText(tText.length > 28 ? tText.substring(0, 26) + '...' : tText, 185, y);
-
-      ctx.fillStyle = '#9ca3af';
-      ctx.font = '500 22px "Plus Jakarta Sans", sans-serif';
-      ctx.fillText(item.song?.artist || 'Unknown', 185, y + 30);
-
-      ctx.fillStyle = accent1;
-      ctx.font = '700 24px "Plus Jakarta Sans", sans-serif';
-      ctx.fillText(`${item.count}x`, 910, y + 15);
-    });
-
-    // 6. Top Artists Row
-    roundRect(80, 1540, 920, 220, 24, 'rgba(255,255,255,0.04)', 'rgba(255,255,255,0.08)');
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '800 30px "Plus Jakarta Sans", sans-serif';
-    ctx.fillText('⭐ TOP ARTIS FAVORIT', 120, 1600);
-
-    const topArt = (summary.topArtists || []).slice(0, 4);
-    topArt.forEach((art, idx) => {
-      const x = 120 + idx * 215;
-      roundRect(x, 1630, 200, 90, 14, 'rgba(255,255,255,0.06)', 'transparent');
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '700 24px "Plus Jakarta Sans", sans-serif';
-      const aName = art.name || 'Unknown';
-      ctx.fillText(aName.length > 12 ? aName.substring(0, 11) + '..' : aName, x + 16, 1670);
-
-      ctx.fillStyle = '#9ca3af';
-      ctx.font = '500 19px "Plus Jakarta Sans", sans-serif';
-      ctx.fillText(`${art.count}x putar`, x + 16, 1700);
-    });
-
-    // 7. Footer Watermark
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.font = '600 22px "Plus Jakarta Sans", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Diputar di NadaKita Studio Audio • musik.local', 540, 1840);
-    ctx.textAlign = 'left';
-
-    // Download PNG File
-    try {
-      const dataUrl = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.download = `NadaKita-Wrapped-${new Date().getFullYear()}.png`;
-      link.href = dataUrl;
-      link.click();
-      showToast('Kartu Wrapped berhasil diunduh! Siap dibagikan ke Story 📸', '🎉');
-    } catch (e) {
-      console.warn('Canvas export error:', e);
-      showToast('Gagal mengekspor kartu Wrapped', '⚠️');
-    }
-  }
-
-  if (exportWrappedBtn) {
-    exportWrappedBtn.addEventListener('click', exportNadaKitaWrappedCard);
-  }
-
-  // ==========================================
-  // DUPLICATE AUDIO FILE SCANNER
-  // ==========================================
-  const duplicatesModal = document.getElementById('duplicates-modal');
-  const duplicateScanBtn = document.getElementById('duplicate-scan-btn');
-  const duplicatesCloseBtn = document.getElementById('duplicates-close-btn');
-  const dupScanningState = document.getElementById('dup-scanning-state');
-  const dupResultsWrap = document.getElementById('dup-results-wrap');
-  const dupSummaryText = document.getElementById('dup-summary-text');
-  const dupGroupsContainer = document.getElementById('dup-groups-container');
-  const dupEmptyMsg = document.getElementById('dup-empty-msg');
-
-  function cleanSongNoise(str) {
-    if (!str) return '';
-    let s = str.toLowerCase();
-    s = s.replace(/\.(mp3|flac|wav|ogg|m4a|aac|opus)$/i, '');
-    // Normalize all unicode dashes (hyphen-minus, en-dash, em-dash, figure dash, minus sign, etc.)
-    s = s.replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g, '-');
-    s = s.replace(/[|｜]/g, ' - ');
-    s = s.replace(/\s*-\s*/g, ' - ');
-    // Remove noise tags
-    s = s.replace(/\((official\s*(music|lyric|audio|video|hd|4k|mv)?\s*(video|audio|clip)?|lyrics?|lirik|audio|mv|hd|4k|visualizer|remastered|full\s*(version|audio|song)?|live[^)]*|jadul[^)]*|viral[^)]*|cover(ed)?\s*by[^)]*|cover\b[^)]*)\)/gi, '');
-    s = s.replace(/\[(official\s*(music|lyric|audio|video|hd|4k|mv)?\s*(video|audio|clip)?|lyrics?|lirik|audio|mv|hd|4k|visualizer|remastered|full\s*(version|audio|song)?|live[^\]]*|jadul[^\]]*|viral[^\]]*|cover(ed)?\s*by[^\]]*|cover\b[^\]]*)\]/gi, '');
-    s = s.replace(/\b(official\s*(music|lyric|audio|video)?\s*(video|audio|clip)?|lyric\s*video|music\s*video|320kbps|128kbps|256kbps)\b/gi, '');
-    return s.trim();
-  }
-
-  function extractPureTitle(rawTitle, rawFilename, rawArtist) {
-    const fClean = cleanSongNoise(rawFilename || '');
-    const tClean = cleanSongNoise(rawTitle || '');
-    const artClean = cleanSongNoise(rawArtist || '').replace(/[^a-z0-9]/g, '');
-    const tAlpha = tClean.replace(/[^a-z0-9]/g, '');
-
-    const isBogusTitle = !tAlpha || tAlpha === artClean || tAlpha.length < 3 || ['cover', 'audio', 'track', 'single', 'unknown', 'music'].includes(tAlpha);
-
-    let bestTitle = isBogusTitle ? '' : tClean;
-
-    if (fClean.includes(' - ')) {
-      const parts = fClean.split(' - ').map(p => p.trim()).filter(Boolean);
-      if (parts.length >= 2) {
-        const p0Alpha = parts[0].replace(/[^a-z0-9]/g, '');
-        const p1Alpha = parts[1].replace(/[^a-z0-9]/g, '');
-
-        if (artClean && (artClean.includes(p0Alpha) || p0Alpha.includes(artClean))) {
-          bestTitle = parts.slice(1).join(' ');
-        } else if (artClean && (artClean.includes(p1Alpha) || p1Alpha.includes(artClean))) {
-          bestTitle = parts[0];
-        } else if (isBogusTitle) {
-          bestTitle = parts[0];
+        if (window.AmbientColor) {
+          window.AmbientColor.setTheme(selectedTheme);
         }
-      }
-    } else if (isBogusTitle) {
-      bestTitle = fClean;
-    }
 
-    const res = cleanSongNoise(bestTitle).replace(/[^a-z0-9]/g, '');
-    return res.length > 2 ? res : fClean.replace(/[^a-z0-9]/g, '');
-  }
-
-  function areTracksDuplicate(a, b) {
-    if (a.id === b.id) return false;
-    // Identical exact file size > 100KB is 100% duplicate
-    if (a.size && b.size && a.size > 100000 && a.size === b.size) return true;
-
-    const titleA = extractPureTitle(a.title, a.filename, a.artist);
-    const titleB = extractPureTitle(b.title, b.filename, b.artist);
-
-    if (!titleA || !titleB || titleA.length < 3 || titleB.length < 3) return false;
-
-    // Both songs MUST have the same core title!
-    if (titleA !== titleB) return false;
-
-    const artA = cleanSongNoise(a.artist || '').replace(/[^a-z0-9]/g, '');
-    const artB = cleanSongNoise(b.artist || '').replace(/[^a-z0-9]/g, '');
-
-    if (!artA || !artB || artA === artB || artA.includes(artB) || artB.includes(artA)) {
-      return true;
-    }
-
-    return false;
-  }
-
-  function findDuplicateTracks() {
-    if (!window.PlaylistManager || !window.PlaylistManager.library) return [];
-    const library = window.PlaylistManager.library;
-    const groups = [];
-    const visited = new Set();
-
-    for (let i = 0; i < library.length; i++) {
-      if (visited.has(i)) continue;
-      const currentGroup = [library[i]];
-      for (let j = i + 1; j < library.length; j++) {
-        if (visited.has(j)) continue;
-        if (areTracksDuplicate(library[i], library[j])) {
-          visited.add(j);
-          currentGroup.push(library[j]);
-        }
-      }
-      if (currentGroup.length > 1) {
-        visited.add(i);
-        groups.push(currentGroup);
-      }
-    }
-
-    return groups;
-  }
-
-  function renderDuplicateScanner() {
-    if (!dupResultsWrap || !dupScanningState) return;
-    dupScanningState.style.display = 'block';
-    dupResultsWrap.style.display = 'none';
-
-    setTimeout(() => {
-      const dupGroups = findDuplicateTracks();
-      dupScanningState.style.display = 'none';
-      dupResultsWrap.style.display = 'block';
-
-      function updateDuplicateSummary() {
-        const remainingCards = dupGroupsContainer.querySelectorAll('.duplicate-group-card');
-        if (remainingCards.length === 0) {
-          dupSummaryText.textContent = 'Tidak ditemukan lagu duplikat';
-          dupEmptyMsg.style.display = 'block';
-        } else {
-          dupEmptyMsg.style.display = 'none';
-          dupSummaryText.textContent = `Ditemukan ${remainingCards.length} grup lagu duplikat`;
-        }
-      }
-
-      if (dupGroups.length === 0) {
-        dupSummaryText.textContent = 'Tidak ditemukan lagu duplikat';
-        dupGroupsContainer.innerHTML = '';
-        dupEmptyMsg.style.display = 'block';
-        return;
-      }
-
-      dupEmptyMsg.style.display = 'none';
-      dupSummaryText.textContent = `Ditemukan ${dupGroups.length} grup lagu duplikat`;
-      dupGroupsContainer.innerHTML = '';
-
-      dupGroups.forEach((group, gIdx) => {
-        const card = document.createElement('div');
-        card.className = 'duplicate-group-card';
-        card.id = `dup-group-${gIdx}`;
-
-        const gTitle = group[0].title;
-        const gArtist = group[0].artist || 'Unknown';
-
-        card.innerHTML = `
-          <div class="duplicate-group-header">
-            <div class="duplicate-group-title">${escapeHTML(gTitle)} <span style="color: var(--text-tertiary); font-weight: 500;">(${escapeHTML(gArtist)})</span></div>
-            <span class="duplicate-group-badge" id="dup-badge-${gIdx}">${group.length} File Ganda</span>
-          </div>
-          <div class="duplicate-songs-list" style="display: flex; flex-direction: column; gap: 6px;">
-            ${group.map((s) => `
-              <div class="duplicate-song-row" id="dup-row-${escapeHTML(s.id)}">
-                <div class="duplicate-song-meta">
-                  <div class="duplicate-song-name">${escapeHTML(s.filename || s.title)}</div>
-                  <div class="duplicate-song-specs">${formatTime(s.duration || 0)} • ${s.size ? (s.size / (1024*1024)).toFixed(2) + ' MB' : (s.filesize ? (s.filesize / (1024*1024)).toFixed(2) + ' MB' : 'Lokal')} • ${s.bitrate || 320}kbps</div>
-                </div>
-                <div style="display: flex; gap: 6px; align-items: center;">
-                  <button class="btn-subtle-scan" style="padding: 4px 8px; font-size: 0.75rem;" onclick="window.PlaylistManager && window.PlaylistManager.playTrack(window.PlaylistManager.getSongById('${escapeHTML(s.id)}'))">
-                    ▶ Tes Putar
-                  </button>
-                  <button class="btn-dup-delete" data-del-id="${escapeHTML(s.id)}" data-group-idx="${gIdx}">
-                    🗑️ Hapus
-                  </button>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        `;
-
-        card.querySelectorAll('.btn-dup-delete').forEach((btn) => {
-          btn.addEventListener('click', async () => {
-            const songId = btn.dataset.delId;
-            const grpIdx = btn.dataset.groupIdx;
-            if (!confirm('Hapus file lagu duplikat ini dari penyimpanan server?')) return;
-
-            btn.disabled = true;
-            btn.innerHTML = '⏳ Menghapus...';
-
-            try {
-              const res = await fetch('api/delete.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: songId })
-              });
-              const data = await res.json();
-              if (data.status === 'success') {
-                showToast('File duplikat berhasil dihapus', '🗑️');
-                const row = document.getElementById(`dup-row-${songId}`);
-                if (row) row.remove();
-
-                // Remove from client library
-                if (window.PlaylistManager && Array.isArray(window.PlaylistManager.library)) {
-                  window.PlaylistManager.library = window.PlaylistManager.library.filter(s => s.id !== songId);
-                }
-
-                // Update current card rows
-                const remainingRows = card.querySelectorAll('.duplicate-song-row');
-                const badge = document.getElementById(`dup-badge-${grpIdx}`);
-                if (badge) badge.textContent = `${remainingRows.length} File Ganda`;
-
-                if (remainingRows.length <= 1) {
-                  card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                  card.style.opacity = '0';
-                  card.style.transform = 'scale(0.95)';
-                  setTimeout(() => {
-                    card.remove();
-                    updateDuplicateSummary();
-                  }, 300);
-                } else {
-                  updateDuplicateSummary();
-                }
-
-                // Sync library & UI in background
-                if (typeof fetchLibrary === 'function') {
-                  fetchLibrary(true);
-                }
-              } else {
-                btn.disabled = false;
-                btn.innerHTML = '🗑️ Hapus';
-                showToast(data.message || 'Gagal menghapus file', '⚠️');
-              }
-            } catch (err) {
-              btn.disabled = false;
-              btn.innerHTML = '🗑️ Hapus';
-              showToast('Kesalahan koneksi saat menghapus file', '⚠️');
-            }
-          });
-        });
-
-        dupGroupsContainer.appendChild(card);
+        themePaletteDropdown.classList.remove('open');
+        const themeLabels = {
+          adaptive: 'Adaptive Glow (Dinamis)',
+          blue: 'Royal Blue',
+          purple: 'Neon Indigo',
+          emerald: 'Emerald Green',
+          rose: 'Velvet Rose',
+          amber: 'Sunset Amber',
+          cyan: 'Cyber Cyan'
+        };
+        showToast(`Aksen tema diubah ke ${themeLabels[selectedTheme] || selectedTheme}!`, '🎨');
       });
-    }, 400);
-  }
-
-  if (duplicateScanBtn) {
-    duplicateScanBtn.addEventListener('click', () => {
-      if (duplicatesModal) {
-        duplicatesModal.classList.add('open');
-        renderDuplicateScanner();
-      }
     });
-  }
-
-  if (duplicatesCloseBtn) {
-    duplicatesCloseBtn.addEventListener('click', () => {
-      if (duplicatesModal) duplicatesModal.classList.remove('open');
-    });
-  }
-
-  // Global Modal Opener Functions
-  window.openThemeModal = () => {
-    const modal = document.getElementById('theme-modal');
-    if (modal) modal.classList.add('open');
-  };
-
-  window.openDuplicatesModal = () => {
-    const modal = document.getElementById('duplicates-modal');
-    if (modal) {
-      modal.classList.add('open');
-      renderDuplicateScanner();
-    }
-  };
-
-  window.openHealthModal = () => {
-    runHealthCheck();
-  };
-
-  // Bulletproof Global Click Delegation for Modals
-  document.addEventListener('click', (e) => {
-    const themeBtn = e.target.closest('#theme-palette-btn');
-    if (themeBtn) {
-      e.preventDefault();
-      window.openThemeModal();
-      return;
-    }
-    const dupBtn = e.target.closest('#duplicate-scan-btn');
-    if (dupBtn) {
-      e.preventDefault();
-      window.openDuplicatesModal();
-      return;
-    }
-    const healthBtn = e.target.closest('#health-check-btn');
-    if (healthBtn) {
-      e.preventDefault();
-      window.openHealthModal();
-      return;
-    }
-  });
-
-  // Restore Shuffle & Repeat UI state from persistent storage
-  if (shuffleBtn) {
-    shuffleBtn.classList.toggle('active', window.PlaylistManager.isShuffle);
-  }
-  if (repeatBtn) {
-    repeatBtn.classList.toggle('active', window.PlaylistManager.repeatMode !== 'off');
-    repeatBtn.title = `Repeat: ${window.PlaylistManager.repeatMode.toUpperCase()}`;
   }
 
   // Initial Data Load & Session Restore
+  initThemePalette();
   await fetchLibrary();
   restoreLastSessionState();
 });

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>NadaKita - Personal Audio Experience</title>
-  <meta name="description" content="Personal High-Fidelity Music Player with Dynamic Ambient Glow, Realtime Synced Lyrics, and 10-Band Graphic Equalizer">
+  <title>KasetKu - Personal Music Experience</title>
+  <meta name="description" content="Retro-Modern Personal Music Player with Dynamic Ambient Glow, Realtime Synced Lyrics, and 10-Band Graphic Equalizer">
   
   <!-- PWA Manifest & Meta -->
   <link rel="manifest" href="manifest.json">
@@ -12,7 +12,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="NadaKita">
+  <meta name="apple-mobile-web-app-title" content="KasetKu">
   <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎵</text></svg>">
@@ -37,13 +37,14 @@
         <div class="brand-logo" id="brand-home-btn">
           <div class="brand-icon-box">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 18V5l12-2v13"></path>
-              <circle cx="6" cy="18" r="3"></circle>
-              <circle cx="18" cy="16" r="3"></circle>
+              <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+              <circle cx="8" cy="12" r="2"></circle>
+              <circle cx="16" cy="12" r="2"></circle>
+              <path d="M6 12h12"></path>
             </svg>
           </div>
-          <span class="brand-text">NadaKita</span>
-          <span class="brand-badge">STUDIO</span>
+          <span class="brand-text">KASET</span>
+          <span class="brand-badge">KU</span>
         </div>
 
         <nav class="nav-group main-nav-group">
@@ -63,6 +64,14 @@
             <span class="nav-text-desktop">Liked Songs</span>
             <span class="nav-text-mobile">Favorit</span>
           </a>
+          <a href="#" class="nav-item" data-tab="yt-music" title="Cari & Stream Musik Online dari YouTube">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path>
+              <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="currentColor"></polygon>
+            </svg>
+            <span class="nav-text-desktop">YouTube Music <span style="font-size: 0.62rem; background: #ef4444; color: #fff; padding: 1px 6px; border-radius: 4px; font-weight: 700; margin-left: 4px;">STREAM</span></span>
+            <span class="nav-text-mobile">YouTube</span>
+          </a>
           <a href="#" class="nav-item" data-tab="stats">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M18 20V10"></path>
@@ -71,15 +80,6 @@
             </svg>
             <span class="nav-text-desktop">Statistik & Wrapped</span>
             <span class="nav-text-mobile">Statistik</span>
-          </a>
-          <a href="#" class="nav-item" data-tab="online" title="Cari & streaming jutaan lagu langsung dari YouTube tanpa download">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="2" y1="12" x2="22" y2="12"></line>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-            </svg>
-            <span class="nav-text-desktop">Cari Online (YouTube)</span>
-            <span class="nav-text-mobile">Online</span>
           </a>
           <a href="#" class="nav-item" data-tab="offline" title="Lagu yang disimpan ke memori HP/PC untuk diputar tanpa internet">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -140,8 +140,7 @@
                 <circle cx="11" cy="11" r="8"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
-              <input type="text" id="search-input" class="search-input" placeholder="Cari lagu, artis, album, nama file..." />
-              <button type="button" id="search-clear-btn" class="search-clear-btn" title="Hapus pencarian" style="display: none;">&times;</button>
+              <input type="text" id="search-input" class="search-input" placeholder="Cari lagu, artis, atau album..." />
             </div>
           </div>
           <div class="header-right">
@@ -168,15 +167,95 @@
                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
               </svg>
             </button>
-            <button class="icon-btn" id="theme-palette-btn" onclick="window.openThemeModal && window.openThemeModal()" title="Ganti Tema Warna Aksen">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle>
-                <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle>
-                <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle>
-                <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle>
-                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z"></path>
-              </svg>
-            </button>
+            <!-- Theme Palette Switcher -->
+            <div class="theme-switcher-wrap" id="theme-switcher-wrap">
+              <button class="icon-btn" id="theme-palette-btn" title="Ganti Tema Warna & Efek Visual (Palette)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+                  <circle cx="7.5" cy="11.5" r="1.5" fill="currentColor"/>
+                  <circle cx="12" cy="7.5" r="1.5" fill="currentColor"/>
+                  <circle cx="16.5" cy="11.5" r="1.5" fill="currentColor"/>
+                </svg>
+              </button>
+              <div class="theme-palette-dropdown" id="theme-palette-dropdown">
+                <div class="theme-dropdown-header">
+                  <span>🎨 Tema & Efek Cahaya</span>
+                </div>
+                <div class="theme-palette-list">
+                  <button class="theme-chip-btn active" data-theme="adaptive">
+                    <div class="theme-chip-left">
+                      <span class="theme-dot theme-dot-adaptive"></span>
+                      <div class="theme-chip-info">
+                        <span class="theme-chip-name">Adaptive Glow 🪄</span>
+                        <span class="theme-chip-desc">Otomatis dari cover album</span>
+                      </div>
+                    </div>
+                    <span class="theme-check-icon">✓</span>
+                  </button>
+                  <button class="theme-chip-btn" data-theme="blue">
+                    <div class="theme-chip-left">
+                      <span class="theme-dot" style="background: #3b82f6; box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);"></span>
+                      <div class="theme-chip-info">
+                        <span class="theme-chip-name">Royal Blue</span>
+                        <span class="theme-chip-desc">Electric Classic Blue</span>
+                      </div>
+                    </div>
+                    <span class="theme-check-icon">✓</span>
+                  </button>
+                  <button class="theme-chip-btn" data-theme="purple">
+                    <div class="theme-chip-left">
+                      <span class="theme-dot" style="background: #8b5cf6; box-shadow: 0 0 10px rgba(139, 92, 246, 0.6);"></span>
+                      <div class="theme-chip-info">
+                        <span class="theme-chip-name">Neon Indigo</span>
+                        <span class="theme-chip-desc">Cyberpunk Purple Glow</span>
+                      </div>
+                    </div>
+                    <span class="theme-check-icon">✓</span>
+                  </button>
+                  <button class="theme-chip-btn" data-theme="emerald">
+                    <div class="theme-chip-left">
+                      <span class="theme-dot" style="background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);"></span>
+                      <div class="theme-chip-info">
+                        <span class="theme-chip-name">Emerald Green</span>
+                        <span class="theme-chip-desc">Spotify Studio Green</span>
+                      </div>
+                    </div>
+                    <span class="theme-check-icon">✓</span>
+                  </button>
+                  <button class="theme-chip-btn" data-theme="rose">
+                    <div class="theme-chip-left">
+                      <span class="theme-dot" style="background: #f43f5e; box-shadow: 0 0 10px rgba(244, 63, 94, 0.6);"></span>
+                      <div class="theme-chip-info">
+                        <span class="theme-chip-name">Velvet Rose</span>
+                        <span class="theme-chip-desc">Deep Vibrant Magenta</span>
+                      </div>
+                    </div>
+                    <span class="theme-check-icon">✓</span>
+                  </button>
+                  <button class="theme-chip-btn" data-theme="amber">
+                    <div class="theme-chip-left">
+                      <span class="theme-dot" style="background: #f59e0b; box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);"></span>
+                      <div class="theme-chip-info">
+                        <span class="theme-chip-name">Sunset Amber</span>
+                        <span class="theme-chip-desc">Warm Gold Sunset</span>
+                      </div>
+                    </div>
+                    <span class="theme-check-icon">✓</span>
+                  </button>
+                  <button class="theme-chip-btn" data-theme="cyan">
+                    <div class="theme-chip-left">
+                      <span class="theme-dot" style="background: #06b6d4; box-shadow: 0 0 10px rgba(6, 182, 212, 0.6);"></span>
+                      <div class="theme-chip-info">
+                        <span class="theme-chip-name">Cyber Cyan</span>
+                        <span class="theme-chip-desc">Aqua Holographic</span>
+                      </div>
+                    </div>
+                    <span class="theme-check-icon">✓</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <button class="icon-btn" id="eq-btn" title="Studio Equalizer & DSP FX">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="4" y1="21" x2="4" y2="14"></line>
@@ -203,7 +282,7 @@
         <section class="hero-banner" id="hero-banner">
           <img class="hero-cover" id="hero-cover" src="assets/sample_covers/placeholder.svg" alt="Cover Album" />
           <div class="hero-content">
-            <span class="hero-tag">NADAKITA NOW PLAYING</span>
+            <span class="hero-tag">KASETKU NOW PLAYING</span>
             <h1 class="hero-title" id="hero-title">Pilih lagu untuk memulai</h1>
             <p class="hero-meta" id="hero-artist">Koleksi audio lokal Anda</p>
             <div class="hero-actions">
@@ -227,7 +306,7 @@
 
         <!-- Library Header & View Switcher -->
         <div class="section-header" id="section-header">
-          <div class="section-header-left">
+          <div style="display: flex; align-items: center; gap: 14px;">
             <h2 class="section-title" id="section-title">Koleksi Musik</h2>
             <button class="btn-subtle-scan" id="quick-rescan-btn" title="Pindai ulang folder">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -237,18 +316,11 @@
               </svg>
               <span>Scan Folder</span>
             </button>
-            <button class="btn-subtle-scan" id="health-check-btn" onclick="window.openHealthModal && window.openHealthModal()" title="Cek & perbaiki lagu rusak" style="border-color: rgba(34, 197, 94, 0.3);">
+            <button class="btn-subtle-scan" id="health-check-btn" title="Cek & perbaiki lagu rusak" style="border-color: rgba(34, 197, 94, 0.3);">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
               </svg>
-              <span>Cek Kesehatan</span>
-            </button>
-            <button class="btn-subtle-scan" id="duplicate-scan-btn" onclick="window.openDuplicatesModal && window.openDuplicatesModal()" title="Pindai & bersihkan file lagu duplikat" style="border-color: rgba(245, 158, 11, 0.3);">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-              <span>Pindai Duplikat</span>
+              <span>Cek Kesehatan Lagu</span>
             </button>
           </div>
           <div class="view-toggle">
@@ -295,9 +367,9 @@
             <colgroup>
               <col style="width: 46px;">
               <col style="width: auto;">
-              <col style="width: 20%;" class="col-album">
-              <col style="width: 12%;" class="col-genre">
-              <col style="width: 210px;">
+              <col style="width: 22%;" class="col-album">
+              <col style="width: 15%;" class="col-genre">
+              <col style="width: 130px;">
             </colgroup>
             <thead>
               <tr>
@@ -321,224 +393,99 @@
 
         <!-- Statistics & Wrapped View (Hidden by default) -->
         <div id="stats-view-wrap" style="display: none;">
-          <!-- Wrapped Banner Hero -->
-          <div class="stats-hero-banner">
-            <div class="stats-hero-glow"></div>
-            <div class="stats-hero-content">
-              <div class="stats-hero-left">
-                <span class="stats-hero-tag">✨ NADAKITA STATS & WRAPPED</span>
-                <h2 class="stats-hero-title">Kilasan Musik Anda</h2>
-                <p class="stats-hero-subtitle">Berdasarkan kebiasaan mendengarkan lagu di pemutar NadaKita.</p>
-                <div class="stats-badges-row">
-                  <span class="persona-chip" id="stat-persona-badge">🎧 Penikmat Musik Aktif</span>
-                  <span class="persona-chip" id="stat-genre-badge">🎵 Genre: Audio</span>
-                  <button class="btn-wrapped-share" id="export-wrapped-btn" title="Unduh gambar ringkasan Wrapped untuk dibagikan ke Story Instagram / WhatsApp">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="7 10 12 15 17 10"></polyline>
-                      <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    <span>Unduh Wrapped Card (PNG)</span>
-                  </button>
-                </div>
-              </div>
-              <div class="stats-hero-spotlight" id="stats-top-spotlight">
-                <!-- Rendered dynamically by JS -->
-              </div>
-            </div>
-          </div>
-
-          <!-- 4 Rich KPI Metric Cards -->
           <div class="stats-overview-grid">
-            <div class="stat-card stat-card-time">
-              <div class="stat-card-top">
-                <div class="stat-icon-box stat-icon-blue">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                </div>
-                <span class="stat-badge-sub" id="stat-time-detail">0 Menit</span>
-              </div>
-              <div class="stat-num" id="stat-total-minutes">0</div>
-              <div class="stat-label">Total Menit Didengar</div>
+            <div class="stat-card">
+              <span class="stat-num" id="stat-total-minutes">0</span>
+              <span class="stat-label">Menit Didengarkan</span>
             </div>
-
-            <div class="stat-card stat-card-plays">
-              <div class="stat-card-top">
-                <div class="stat-icon-box stat-icon-purple">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                </div>
-                <span class="stat-badge-sub">Riwayat Putar</span>
-              </div>
-              <div class="stat-num" id="stat-total-plays">0</div>
-              <div class="stat-label">Total Pemutaran Lagu</div>
+            <div class="stat-card">
+              <span class="stat-num" id="stat-total-plays">0</span>
+              <span class="stat-label">Total Pemutaran Lagu</span>
             </div>
-
-            <div class="stat-card stat-card-artists">
-              <div class="stat-card-top">
-                <div class="stat-icon-box stat-icon-pink">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
-                </div>
-                <span class="stat-badge-sub">Musisi Unik</span>
-              </div>
-              <div class="stat-num" id="stat-total-artists">0</div>
-              <div class="stat-label">Artis Berbeda</div>
-            </div>
-
-            <div class="stat-card stat-card-top-artist">
-              <div class="stat-card-top">
-                <div class="stat-icon-box stat-icon-amber">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                </div>
-                <span class="stat-badge-sub" id="stat-top-artist-plays">0x Putar</span>
-              </div>
-              <div class="stat-num stat-artist-name" id="stat-top-artist-name">-</div>
-              <div class="stat-label">Artis Paling Sering Diputar</div>
+            <div class="stat-card">
+              <span class="stat-num" id="stat-total-artists">0</span>
+              <span class="stat-label">Artis Berbeda</span>
             </div>
           </div>
 
-          <!-- Detailed 2-Column Analytics Showcase -->
-          <div class="stats-sections-flex">
-            <!-- Left: Top 10 Tracks with artwork & instant play -->
-            <div class="stats-col-left">
-              <div class="stats-section-header">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="font-size: 1.2rem;">🔥</span>
-                  <h3 class="stats-section-title">Top 10 Lagu Paling Sering Diputar</h3>
-                </div>
-                <span class="stats-section-hint">Klik untuk langsung putar</span>
-              </div>
+          <div class="stats-sections-flex" style="display: flex; gap: 24px; margin-top: 28px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 300px;">
+              <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary);">🔥 Top 10 Lagu Paling Sering Diputar</h3>
               <div class="top-tracks-list" id="top-tracks-container">
-                <!-- Dynamic Rich Top Tracks -->
+                <!-- Dynamic Top Tracks -->
               </div>
             </div>
-
-            <!-- Right: Top Artists & Music Personality Card -->
-            <div class="stats-col-right">
-              <div class="stats-section-header">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="font-size: 1.2rem;">⭐</span>
-                  <h3 class="stats-section-title">Top Artis Favorit</h3>
-                </div>
-              </div>
+            <div style="flex: 1; min-width: 260px;">
+              <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary);">⭐ Top Artis Favorit</h3>
               <div class="top-artists-list" id="top-artists-container">
                 <!-- Dynamic Top Artists -->
               </div>
+            </div>
+          </div>
+        </div>
 
-              <!-- Quick Listening Insight Card -->
-              <div class="stats-insight-card">
-                <div class="insight-header">
-                  <span style="font-size: 1.15rem;">💡</span>
-                  <span style="font-weight: 700; font-size: 0.92rem; color: var(--text-primary);">Wawasan Koleksi Musik</span>
+        <!-- YouTube Music Online Streaming View (Hidden by default) -->
+        <div id="yt-music-view-wrap" style="display: none; width: 100%;">
+          <!-- Online Search Hero -->
+          <div class="yt-search-hero" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(15, 18, 26, 0.8)); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: var(--radius-lg); padding: 24px 28px; margin-bottom: 24px; position: relative; overflow: hidden;">
+            <div style="position: relative; z-index: 2; max-width: 680px;">
+              <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: var(--radius-full); color: #f87171; font-size: 0.75rem; font-weight: 700; margin-bottom: 10px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+                </svg>
+                <span>YOUTUBE MUSIC STREAMING ENGINE</span>
+              </div>
+              <h2 style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.02em;">Cari & Putar Musik Online Bebas</h2>
+              <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 18px;">Streaming instan jutaan lagu dari YouTube & YouTube Music langsung dengan kualitas audio tinggi, visualizer realtime, equalizer, dan lirik sinkron.</p>
+
+              <!-- Online Search Box -->
+              <div style="display: flex; gap: 8px;">
+                <div style="position: relative; flex: 1;">
+                  <svg style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--text-tertiary); pointer-events: none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  <input type="text" id="yt-online-search-input" class="form-control" style="padding-left: 42px; height: 44px; font-size: 0.92rem; border-radius: var(--radius-full); background: rgba(10, 12, 18, 0.85); border: 1px solid rgba(255, 255, 255, 0.15);" placeholder="Cari judul lagu, nama artis, atau tempel link YouTube..." />
                 </div>
-                <p class="insight-text" id="stat-insight-text">
-                  Lagu di NadaKita disimpan secara lokal dengan responsivitas tinggi, visualizer realtime, dan pemutar audio fidelitas tinggi.
-                </p>
+                <button id="yt-online-search-btn" class="btn-primary-play" style="padding: 0 22px; height: 44px; border-radius: var(--radius-full); font-size: 0.88rem; background: #ef4444; border-color: #dc2626; color: #fff; gap: 8px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  <span>Cari</span>
+                </button>
+              </div>
+
+              <!-- Trending / Genre Tags -->
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px;">
+                <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-tertiary);">POPULER:</span>
+                <span class="yt-trend-chip" data-query="Top Indonesia Hits 2026">🔥 Top Indo</span>
+                <span class="yt-trend-chip" data-query="Global Top 50 Hits">🌍 Global Top 50</span>
+                <span class="yt-trend-chip" data-query="Lofi Hip Hop Chill Beats">☕ Lofi Chill</span>
+                <span class="yt-trend-chip" data-query="Jedag Jedug TikTok Viral">⚡ Jedag Jedug</span>
+                <span class="yt-trend-chip" data-query="Classic Rock Best">🎸 Classic Rock</span>
+                <span class="yt-trend-chip" data-query="Anime OST Best">🎌 Anime OST</span>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- ==========================================
-             YOUTUBE MUSIC EXPLORER & ON-DEMAND STREAM
-             ========================================== -->
-        <div id="online-view-wrap" style="display: none;">
-          <!-- YouTube Music Mood & Activity Category Chips -->
-          <div class="ytm-moods-bar">
-            <button class="ytm-mood-chip active" data-query="Top Hits Indonesia 2026">🔥 Top Hits Indo</button>
-            <button class="ytm-mood-chip" data-query="Lagu Santai Chill Indonesia Populer">🧘 Relax & Chill</button>
-            <button class="ytm-mood-chip" data-query="Lofi Hip Hop Chill Beats Study">☕ Lo-Fi & Fokus</button>
-            <button class="ytm-mood-chip" data-query="Lagu Galau Indonesia Populer">💔 Melow / Galau</button>
-            <button class="ytm-mood-chip" data-query="Lagu Akustik Indonesia Terbaik">🎸 Akustik</button>
-            <button class="ytm-mood-chip" data-query="Workout Gym Hype Music 2026">⚡ Workout / Hype</button>
-            <button class="ytm-mood-chip" data-query="Top Global Viral Hits">🌍 Global Hits</button>
-            <button class="ytm-mood-chip" data-query="Anime OST Official Soundtrack">🎌 Anime & J-Pop</button>
+          <!-- Search Status / Spinner -->
+          <div id="yt-online-loading" style="display: none; text-align: center; padding: 40px 0;">
+            <div class="sound-waves-indicator" style="justify-content: center; height: 24px; gap: 4px; margin-bottom: 12px;">
+              <div class="wave-bar" style="width: 4px; background: #ef4444;"></div>
+              <div class="wave-bar" style="width: 4px; background: #ef4444;"></div>
+              <div class="wave-bar" style="width: 4px; background: #ef4444;"></div>
+              <div class="wave-bar" style="width: 4px; background: #ef4444;"></div>
+            </div>
+            <span style="color: var(--text-secondary); font-size: 0.9rem;">Mencari musik online dari YouTube...</span>
           </div>
 
-          <!-- YouTube Search & View Toggle Header -->
-          <div class="ytm-search-header">
-            <div class="ytm-search-box">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-              <input type="text" id="online-search-input" class="ytm-search-input" placeholder="Cari jutaan lagu, artis, atau album di YouTube..." />
-              <button type="button" id="online-search-submit-btn" class="btn-primary-play" style="padding: 7px 16px; font-size: 0.82rem; border-radius: var(--radius-sm); white-space: nowrap;">
-                Cari Musik
-              </button>
-            </div>
-
-            <!-- View Switcher (Grid vs List) -->
-            <div class="view-toggle" style="flex-shrink: 0;">
-              <button class="view-btn active" id="ytm-view-grid-btn" data-ytm-view="grid" title="Tampilan Grid YouTube Music">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="3" width="7" height="7"></rect>
-                  <rect x="14" y="3" width="7" height="7"></rect>
-                  <rect x="14" y="14" width="7" height="7"></rect>
-                  <rect x="3" y="14" width="7" height="7"></rect>
-                </svg>
-              </button>
-              <button class="view-btn" id="ytm-view-list-btn" data-ytm-view="list" title="Tampilan Daftar Tabel">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="8" y1="6" x2="21" y2="6"></line>
-                  <line x1="8" y1="12" x2="21" y2="12"></line>
-                  <line x1="8" y1="18" x2="21" y2="18"></line>
-                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Section Heading -->
-          <div class="ytm-section-heading">
-            <div>
-              <span class="ytm-sub-badge">YOUTUBE MUSIC STREAMING</span>
-              <h3 class="ytm-heading-title" id="ytm-heading-title">Pilihan Teratas Untuk Anda</h3>
-            </div>
-            <span class="ytm-count-badge" id="ytm-count-badge">15 Lagu</span>
-          </div>
-
-          <!-- Loading State Indicator -->
-          <div id="online-loading-state" style="display: none; text-align: center; padding: 48px 0;">
-            <div class="sound-waves-indicator" style="justify-content: center; height: 32px; margin-bottom: 12px;">
-              <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-            </div>
-            <p style="color: var(--text-secondary); font-size: 0.9rem;">Menghubungkan ke YouTube Music...</p>
-          </div>
-
-          <!-- YouTube Music Grid Card View (Default) -->
-          <div class="ytm-cards-grid" id="ytm-cards-grid">
+          <!-- Results Grid -->
+          <div id="yt-online-results-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px;">
             <!-- Dynamic YouTube Music Cards -->
           </div>
-
-          <!-- Table View (Alternative) -->
-          <div id="online-results-container" style="display: none; margin-top: 14px;">
-            <table class="song-table" id="online-song-table">
-              <colgroup>
-                <col style="width: 46px;">
-                <col style="width: auto;">
-                <col style="width: 25%;" class="col-album">
-                <col style="width: 140px;">
-                <col style="width: 220px;">
-              </colgroup>
-              <thead>
-                <tr>
-                  <th style="text-align: center;">#</th>
-                  <th>Judul & Channel</th>
-                  <th class="col-album">Sumber</th>
-                  <th>Durasi</th>
-                  <th style="text-align: right; padding-right: 14px;">Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="online-table-body">
-                <!-- Rendered dynamically -->
-              </tbody>
-            </table>
-          </div>
         </div>
 
-        <!-- Bottom Spacer to guarantee zero cutoff above bottom player bar -->
-        <div class="content-bottom-spacer" style="height: 24px; min-height: 24px; flex-shrink: 0; pointer-events: none; width: 100%;"></div>
       </main>
 
       <!-- ==========================================
@@ -581,8 +528,6 @@
               <span class="vis-mode-chip active" data-mode="bars">Spectrum Bars</span>
               <span class="vis-mode-chip" data-mode="wave">Fluid Wave</span>
               <span class="vis-mode-chip" data-mode="radial">Radial Ring</span>
-              <span class="vis-mode-chip" data-mode="orb">Neon Orb 🔮</span>
-              <span class="vis-mode-chip" data-mode="matrix">Cyber Matrix ⚡</span>
             </div>
           </div>
 
@@ -603,10 +548,20 @@
       <div class="player-left">
         <div class="player-cover-wrap" id="player-cover-wrap">
           <img class="player-cover-img" id="player-cover" src="assets/sample_covers/placeholder.svg" alt="Cover" />
+          <div class="player-cover-eq" id="player-cover-eq">
+            <span class="p-eq-bar"></span>
+            <span class="p-eq-bar"></span>
+            <span class="p-eq-bar"></span>
+          </div>
         </div>
         <div class="player-track-info">
-          <span class="player-title" id="player-title">Belum ada lagu</span>
-          <span class="player-artist" id="player-artist">NadaKita Player</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="player-title" id="player-title">Belum ada lagu</span>
+            <div class="inline-mini-eq" id="player-mini-eq" title="Sedang memutar audio">
+              <span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+          <span class="player-artist" id="player-artist">KasetKu Player</span>
         </div>
         <button class="player-heart-btn" id="player-heart-btn" title="Tambah ke Favorit">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -656,12 +611,6 @@
               <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
             </svg>
           </button>
-        </div>
-
-        <!-- Mini Synced Lyrics Ticker -->
-        <div class="player-mini-lyrics" id="player-mini-lyrics" style="display: none;" title="Buka Panel Lirik">
-          <span class="mini-lyrics-icon">🎵</span>
-          <span class="mini-lyrics-text" id="mini-lyrics-text"></span>
         </div>
 
         <div class="progress-row">
@@ -722,11 +671,6 @@
           </svg>
         </button>
       </div>
-
-      <!-- Mobile Mini Player Live Progress Bar -->
-      <div class="mobile-player-progress" id="mobile-player-progress">
-        <div class="mobile-progress-fill" id="mobile-progress-fill"></div>
-      </div>
     </footer>
   </div>
 
@@ -742,7 +686,7 @@
     <canvas id="immersive-canvas" class="immersive-canvas-bg"></canvas>
     <div class="immersive-top-bar">
       <div style="display: flex; align-items: center; gap: 10px;">
-        <span style="font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; color: var(--text-secondary);">NADAKITA IMMERSIVE KARAOKE</span>
+        <span style="font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; color: var(--text-secondary);">KASETKU IMMERSIVE KARAOKE</span>
       </div>
       <button class="icon-btn" id="immersive-close-btn" title="Tutup Mode Layar Penuh (Esc)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -830,15 +774,23 @@
         <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 8px;">Mode Audio Studio (DSP FX Presets):</span>
         <div class="dsp-modes-grid" style="display: flex; gap: 8px; flex-wrap: wrap;">
           <button class="dsp-mode-chip active" id="dsp-clean-btn" data-mode="clean">Studio Clean</button>
-          <button class="dsp-mode-chip" id="dsp-dolby-btn" data-mode="dolby" title="Soundstage 3D melebar dengan kejernihan Dolby Surround">Dolby 3D Surround 🌐</button>
-          <button class="dsp-mode-chip" id="dsp-concert-btn" data-mode="concert" title="Akustik panggung konser live & stadium reverb">Live Concert Hall 🏟️</button>
+          <button class="dsp-mode-chip" id="dsp-dolby-btn" data-mode="dolby" title="Dolby 3D Surround Virtualizer">Dolby 3D Surround 🌐</button>
+          <button class="dsp-mode-chip" id="dsp-concert-btn" data-mode="concert" title="Live Concert Hall Stage">Live Concert Hall 🏛️</button>
           <button class="dsp-mode-chip" id="dsp-8d-btn" data-mode="8d" title="Audio berputar mengelilingi kepala 360 derajat">8D Spatial Audio 🎧</button>
-          <button class="dsp-mode-chip" id="dsp-slowed-btn" data-mode="slowed">Slowed + Reverb 🌌</button>
+          <button class="dsp-mode-chip" id="dsp-slowed-btn" data-mode="slowed">Slowed + Reverb 💧</button>
           <button class="dsp-mode-chip" id="dsp-nightcore-btn" data-mode="nightcore">Nightcore ⚡</button>
           <button class="dsp-mode-chip" id="dsp-vaporwave-btn" data-mode="vaporwave">Vaporwave 📼</button>
           <button class="dsp-mode-chip" id="dsp-bassmaster-btn" data-mode="bassmaster">Bass Master 808 🔊</button>
           <button class="dsp-mode-chip" id="dsp-karaoke-btn" data-mode="karaoke" title="Meredam vokal penyanyi asli">Karaoke Mode 🎤</button>
           <button class="dsp-mode-chip" id="dsp-haptic-btn" data-mode="haptic" title="HP Bergetar Ikuti Dentuman Bass">Haptic Bass 📳</button>
+          <button class="dsp-mode-chip" id="dsp-edm-btn" data-mode="edm" title="EDM Festival Sound">EDM Festival 📢⚡</button>
+          <button class="dsp-mode-chip" id="dsp-vinyl-btn" data-mode="vinyl_lofi" title="Vinyl Lo-Fi Chill">Vinyl Lo-Fi Chill ☕📼</button>
+          <button class="dsp-mode-chip" id="dsp-cathedral-btn" data-mode="cathedral" title="Cathedral 3D Spatial">Cathedral 3D Spatial ⛪</button>
+          <button class="dsp-mode-chip" id="dsp-podcast-btn" data-mode="podcast" title="Podcast Broadcast Voice">Podcast Broadcast 🎙️</button>
+          <button class="dsp-mode-chip" id="dsp-asmr-btn" data-mode="asmr" title="ASMR Binaural Whisper">ASMR Binaural 🍃</button>
+          <button class="dsp-mode-chip" id="dsp-gaming-btn" data-mode="gaming" title="Gaming FPS Surround">Gaming FPS Surround 🎯</button>
+          <button class="dsp-mode-chip" id="dsp-radio-btn" data-mode="vintage_radio" title="Vintage Radio AM">Vintage Radio AM 📻</button>
+          <button class="dsp-mode-chip" id="dsp-metal-btn" data-mode="metal" title="Heavy Metal Rock">Heavy Metal Rock 🎸</button>
         </div>
       </div>
 
@@ -899,17 +851,17 @@
         <!-- Preset Selector -->
         <div class="eq-presets-bar">
           <span class="eq-preset-chip active" data-preset="flat">Flat</span>
+          <span class="eq-preset-chip" data-preset="dolby">Dolby Atmos</span>
+          <span class="eq-preset-chip" data-preset="hires">Hi-Res Audio</span>
           <span class="eq-preset-chip" data-preset="bass_boost">Bass Boost</span>
-          <span class="eq-preset-chip" data-preset="edm">EDM / Dance 🎧</span>
-          <span class="eq-preset-chip" data-preset="vocal">Vocal Clarity 🎙️</span>
-          <span class="eq-preset-chip" data-preset="acoustic">Acoustic Warmth 🎸</span>
+          <span class="eq-preset-chip" data-preset="concert">Concert Hall</span>
+          <span class="eq-preset-chip" data-preset="tube">Tube Warmth</span>
+          <span class="eq-preset-chip" data-preset="electronic">Electronic</span>
           <span class="eq-preset-chip" data-preset="rock">Rock</span>
           <span class="eq-preset-chip" data-preset="pop">Pop</span>
-          <span class="eq-preset-chip" data-preset="electronic">Electronic</span>
           <span class="eq-preset-chip" data-preset="jazz">Jazz</span>
-          <span class="eq-preset-chip" data-preset="classical">Classical 🎻</span>
-          <span class="eq-preset-chip" data-preset="podcast">Podcast / Speech 🗣️</span>
-          <span class="eq-preset-chip" data-preset="gaming">Gaming & Cine 🎮</span>
+          <span class="eq-preset-chip" data-preset="vocal">Vocal</span>
+          <span class="eq-preset-chip" data-preset="acoustic">Acoustic</span>
         </div>
 
         <!-- 10 Vertical EQ Sliders -->
@@ -1037,7 +989,7 @@
           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 8px 10px; background: var(--bg-surface); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
             <input type="checkbox" id="batch-auto-playlist" checked style="accent-color: var(--accent-primary); width: 16px; height: 16px; cursor: pointer;" />
             <label for="batch-auto-playlist" style="font-size: 0.82rem; color: var(--text-primary); cursor: pointer; user-select: none;">
-              Otomatis buat Playlist baru di Aura Music dengan nama ini
+              Otomatis buat Playlist baru di KasetKu dengan nama ini
             </label>
           </div>
 
@@ -1330,28 +1282,6 @@
     </div>
   </div>
 
-  <!-- Mobile Song Actions Bottom Sheet Modal -->
-  <div class="modal-overlay song-actions-overlay" id="song-actions-modal">
-    <div class="modal-card song-actions-card" id="song-actions-card">
-      <div class="song-actions-header">
-        <img class="song-actions-thumb" id="song-actions-thumb" src="assets/sample_covers/placeholder.svg" alt="Cover" />
-        <div class="song-actions-meta">
-          <div class="song-actions-title" id="song-actions-title">Judul Lagu</div>
-          <div class="song-actions-artist" id="song-actions-artist">Nama Artis</div>
-        </div>
-        <button class="modal-close-btn" id="song-actions-close-btn" title="Tutup">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-      <div class="song-actions-list" id="song-actions-list">
-        <!-- Rendered dynamically by JS -->
-      </div>
-    </div>
-  </div>
-
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toast-container"></div>
 
@@ -1361,7 +1291,7 @@
     <div class="modal-card" style="max-width: 520px;">
       <div class="modal-header">
         <h3 class="modal-title">🩺 Cek Kesehatan Library Lagu</h3>
-        <button class="modal-close-btn" id="health-close-btn" onclick="document.getElementById('health-modal').classList.remove('open')">&times;</button>
+        <button class="modal-close-btn" id="health-close-btn">&times;</button>
       </div>
       <div class="modal-body" style="padding: 10px 0 0;">
         <div id="health-status-wrap" style="text-align: center; padding: 24px 0;">
@@ -1421,86 +1351,6 @@
           <div class="shortcut-item"><kbd>Q</kbd><span>Toggle Queue Panel</span></div>
           <div class="shortcut-item"><kbd>F</kbd><span>Fullscreen Mode</span></div>
           <div class="shortcut-item"><kbd>?</kbd><span>Shortcut Cheatsheet</span></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Theme Accent Color Palette Modal -->
-  <div class="modal-overlay" id="theme-modal">
-    <div class="modal-card" style="max-width: 520px;">
-      <div class="modal-header">
-        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
-          <span>🎨</span> Tema Warna Aksen NadaKita
-        </h3>
-        <button class="modal-close-btn" id="theme-close-btn" onclick="document.getElementById('theme-modal').classList.remove('open')">&times;</button>
-      </div>
-      <div class="modal-body" style="padding: 6px 0 0;">
-        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 14px;">
-          Pilih palet warna aksen yang Anda sukai untuk mengubah nuansa visual pemutar musik, tombol kontrol, dan efek glow secara instan:
-        </p>
-
-        <div class="theme-presets-grid" id="theme-presets-list">
-          <div class="theme-preset-card active" data-theme-val="blue">
-            <div class="theme-swatch-circle" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);"></div>
-            <span class="theme-preset-name">Electric Blue</span>
-            <span class="theme-preset-desc">Classic Studio</span>
-          </div>
-          <div class="theme-preset-card" data-theme-val="purple">
-            <div class="theme-swatch-circle" style="background: linear-gradient(135deg, #a855f7, #6b21a8);"></div>
-            <span class="theme-preset-name">Cyber Purple</span>
-            <span class="theme-preset-desc">Neon Synth</span>
-          </div>
-          <div class="theme-preset-card" data-theme-val="emerald">
-            <div class="theme-swatch-circle" style="background: linear-gradient(135deg, #10b981, #047857);"></div>
-            <span class="theme-preset-name">Emerald Neon</span>
-            <span class="theme-preset-desc">Fresh Forest</span>
-          </div>
-          <div class="theme-preset-card" data-theme-val="amber">
-            <div class="theme-swatch-circle" style="background: linear-gradient(135deg, #f59e0b, #b45309);"></div>
-            <span class="theme-preset-name">Sunset Amber</span>
-            <span class="theme-preset-desc">Warm Radiant</span>
-          </div>
-          <div class="theme-preset-card" data-theme-val="pink">
-            <div class="theme-swatch-circle" style="background: linear-gradient(135deg, #ec4899, #be185d);"></div>
-            <span class="theme-preset-name">Rose Cyber</span>
-            <span class="theme-preset-desc">Lotus Glow</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Duplicate Audio Files Scanner Modal -->
-  <div class="modal-overlay" id="duplicates-modal">
-    <div class="modal-card" style="max-width: 620px;">
-      <div class="modal-header">
-        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
-          <span>🔍</span> Pindai File Musik Duplikat
-        </h3>
-        <button class="modal-close-btn" id="duplicates-close-btn" onclick="document.getElementById('duplicates-modal').classList.remove('open')">&times;</button>
-      </div>
-      <div class="modal-body" style="padding: 10px 0 0;">
-        <div id="dup-scanning-state" style="text-align: center; padding: 24px 0;">
-          <div style="font-size: 2.2rem; margin-bottom: 8px;">🔄</div>
-          <p style="color: var(--text-secondary); font-size: 0.9rem;">Menganalisis kemiripan judul, artis, dan ukuran file...</p>
-        </div>
-
-        <div id="dup-results-wrap" style="display: none;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: var(--radius-sm); padding: 10px 14px;">
-            <div>
-              <span id="dup-summary-text" style="font-size: 0.88rem; font-weight: 700; color: var(--accent-amber);">Ditemukan 0 grup duplikat</span>
-              <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">Simpan file terbaik dan hapus versi ganda untuk menghemat ruang.</p>
-            </div>
-          </div>
-
-          <div id="dup-groups-container" style="max-height: 360px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; padding-right: 6px;">
-            <!-- Dynamic Duplicate Groups -->
-          </div>
-
-          <div id="dup-empty-msg" style="display: none; text-align: center; padding: 20px 0; color: #10b981; font-weight: 600;">
-            ✨ Tidak ditemukan lagu duplikat di koleksi musik Anda!
-          </div>
         </div>
       </div>
     </div>

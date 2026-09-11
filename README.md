@@ -21,7 +21,7 @@ Aura Music adalah aplikasi pemutar musik modern (*Self-Hosted Web Music Player*)
 
 ### 🎨 2. Visual & Antarmuka Interaktif
 * **Interactive Waveform Scrubber**: Visualisasi gelombang audio riil yang dapat digeser untuk navigasi lagu secara presisi.
-* **Real-time Audio Visualizers**: 5 mode spektrum frekuensi animasi (*Neon Bars*, *Waveform*, *Circle Pulse*, *Particles*, *Cyber Glow*).
+* **Real-time Audio Visualizers**: Pilihan mode visualisasi animasi realtime (*Spectrum Bars*, *Fluid Wave*, *Radial Ring*).
 * **Adaptive Ambient Glow**: Warna aksen antarmuka berubah secara dinamis mengikuti palet warna cover album yang sedang diputar.
 * **Synchronized Karaoke Lyrics Engine**: Penampil lirik kata-per-kata yang bergerak mulus dengan dukungan file format `.lrc` dan mode panggung *Immersive Fullscreen*.
 

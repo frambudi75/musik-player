@@ -202,13 +202,18 @@ class LyricsEngine {
       if (!container) return;
       const allLines = container.querySelectorAll('.lyric-line');
       allLines.forEach((el, i) => {
+        el.classList.remove('active', 'adjacent-prev', 'adjacent-next', 'far-line');
         if (i === index) {
           el.classList.add('active');
           if (this.isAutoScrollEnabled) {
             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
+        } else if (i === index - 1) {
+          el.classList.add('adjacent-prev');
+        } else if (i === index + 1) {
+          el.classList.add('adjacent-next');
         } else {
-          el.classList.remove('active');
+          el.classList.add('far-line');
         }
       });
     };
