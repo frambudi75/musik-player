@@ -662,7 +662,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Render Statistics & Wrapped View
+  // Render Statistics View
   function renderStatsView() {
     const summary = window.PlaylistManager.getStatsSummary();
     const statMinutesEl = document.getElementById('stat-total-minutes');
@@ -670,53 +670,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     const statArtistsEl = document.getElementById('stat-total-artists');
     const topTracksContainer = document.getElementById('top-tracks-container');
     const topArtistsContainer = document.getElementById('top-artists-container');
-    const personaTitleEl = document.getElementById('wrapped-persona-title');
 
     if (statMinutesEl) statMinutesEl.textContent = summary.totalMinutes;
     if (statPlaysEl) statPlaysEl.textContent = summary.totalPlays;
     if (statArtistsEl) statArtistsEl.textContent = summary.topArtists.length;
 
-    // Calculate dynamic persona badge
-    if (personaTitleEl) {
-      if (summary.totalMinutes >= 180) {
-        personaTitleEl.innerHTML = '👑 Supreme Audiophile';
-      } else if (summary.totalMinutes >= 60) {
-        personaTitleEl.innerHTML = '🎧 Melophile Sejati';
-      } else if (summary.totalPlays >= 10) {
-        personaTitleEl.innerHTML = '✨ Music Explorer';
-      } else {
-        personaTitleEl.innerHTML = '🎵 Casual Listener';
-      }
-    }
-
     if (topTracksContainer) {
       topTracksContainer.innerHTML = '';
       if (summary.topTracks.length === 0) {
-        topTracksContainer.innerHTML = `<div style="color: var(--text-tertiary); font-size: 0.85rem; padding: 20px 0; text-align: center;">Belum ada riwayat pemutaran. Putar beberapa lagu untuk membuka Wrapped Anda! 🎵</div>`;
+        topTracksContainer.innerHTML = `<div style="color: var(--text-tertiary); font-size: 0.85rem;">Belum ada riwayat pemutaran. Putar lagu untuk melihat statistik Anda!</div>`;
       } else {
         summary.topTracks.forEach((item, i) => {
-          const rankColors = ['#fbbf24', '#cbd5e1', '#f97316'];
-          const rankColor = i < 3 ? rankColors[i] : 'var(--text-tertiary)';
-          const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
-
           const row = document.createElement('div');
           row.className = 'top-track-card';
-          row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s ease; gap: 12px;';
-          row.onmouseenter = () => { row.style.background = 'rgba(255, 255, 255, 0.08)'; row.style.transform = 'translateX(4px)'; };
-          row.onmouseleave = () => { row.style.background = 'rgba(255, 255, 255, 0.04)'; row.style.transform = 'none'; };
-
           row.innerHTML = `
             <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
-              <span style="font-family: var(--font-mono); font-weight: 800; color: ${rankColor}; font-size: 0.95rem; width: 26px; text-align: center;">${medal}</span>
-              <img src="${item.song.cover || DEFAULT_COVER}" style="width: 42px; height: 42px; border-radius: var(--radius-sm); object-fit: cover; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.4);" />
+              <span style="font-family: var(--font-mono); font-weight: 700; color: ${i === 0 ? 'var(--accent-amber)' : 'var(--text-tertiary)'}; font-size: 0.95rem; width: 22px;">#${i + 1}</span>
               <div style="display: flex; flex-direction: column; min-width: 0;">
-                <span style="font-weight: 700; color: var(--text-primary); font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(item.song.title)}</span>
-                <span style="font-size: 0.74rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(item.song.artist)}</span>
+                <span style="font-weight: 600; color: var(--text-primary); font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(item.song.title)}</span>
+                <span style="font-size: 0.75rem; color: var(--text-secondary);">${escapeHTML(item.song.artist)}</span>
               </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); padding: 3px 10px; border-radius: var(--radius-full);">${item.count}x diputar</span>
-            </div>
+            <span style="font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; color: var(--accent-primary); background: var(--accent-subtle); padding: 4px 8px; border-radius: var(--radius-full);">${item.count}x</span>
           `;
           row.onclick = () => {
             const track = window.PlaylistManager.getSongById(item.id);
@@ -730,32 +705,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (topArtistsContainer) {
       topArtistsContainer.innerHTML = '';
       if (summary.topArtists.length === 0) {
-        topArtistsContainer.innerHTML = `<div style="color: var(--text-tertiary); font-size: 0.85rem; padding: 20px 0; text-align: center;">Belum ada data artis.</div>`;
+        topArtistsContainer.innerHTML = `<div style="color: var(--text-tertiary); font-size: 0.85rem;">Belum ada data artis.</div>`;
       } else {
         summary.topArtists.forEach((item, i) => {
           const row = document.createElement('div');
           row.className = 'top-artist-item';
-          row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s ease;';
-          row.onmouseenter = () => { row.style.background = 'rgba(255, 255, 255, 0.08)'; row.style.transform = 'translateX(4px)'; };
-          row.onmouseleave = () => { row.style.background = 'rgba(255, 255, 255, 0.04)'; row.style.transform = 'none'; };
-
           row.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
-              <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #8b5cf6, #3b82f6); display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.85rem; flex-shrink: 0; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.35);">
-                ${escapeHTML(item.name.substring(0, 1).toUpperCase())}
-              </div>
-              <span style="font-weight: 700; color: var(--text-primary); font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(item.name)}</span>
-            </div>
-            <span style="font-family: var(--font-mono); font-size: 0.76rem; font-weight: 600; color: var(--text-secondary); background: rgba(255, 255, 255, 0.06); padding: 3px 8px; border-radius: var(--radius-sm);">${item.count} trek</span>
+            <span style="font-weight: 600; color: var(--text-primary); font-size: 0.88rem;">${escapeHTML(item.name)}</span>
+            <span style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-secondary);">${item.count} lagu diputar</span>
           `;
-          row.onclick = () => {
-            searchInput.value = item.name;
-            currentNavTab = 'library';
-            navItems.forEach((n) => {
-              n.classList.toggle('active', n.dataset.tab === 'library');
-            });
-            renderCurrentView();
-          };
           topArtistsContainer.appendChild(row);
         });
       }
@@ -765,10 +723,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Render Current Tab Content
   async function renderCurrentView() {
     const ytMusicViewWrap = document.getElementById('yt-music-view-wrap');
+    const filterSortBar = document.getElementById('filter-sort-bar');
 
     if (currentNavTab === 'stats') {
       heroBanner.style.display = 'none';
       document.getElementById('section-header').style.display = 'none';
+      if (filterSortBar) filterSortBar.style.display = 'none';
       tableViewWrap.style.display = 'none';
       songsGrid.style.display = 'none';
       statsViewWrap.style.display = 'block';
@@ -780,6 +740,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (currentNavTab === 'yt-music') {
       heroBanner.style.display = 'none';
       document.getElementById('section-header').style.display = 'none';
+      if (filterSortBar) filterSortBar.style.display = 'none';
       tableViewWrap.style.display = 'none';
       songsGrid.style.display = 'none';
       statsViewWrap.style.display = 'none';
@@ -794,6 +755,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     statsViewWrap.style.display = 'none';
     heroBanner.style.display = 'flex';
     document.getElementById('section-header').style.display = 'flex';
+    if (filterSortBar) filterSortBar.style.display = 'flex';
 
     // Restore table or grid view based on active toggle button
     const activeViewMode = document.querySelector('.view-btn.active')?.dataset.view || 'table';

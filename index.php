@@ -393,23 +393,6 @@
 
         <!-- Statistics & Wrapped View (Hidden by default) -->
         <div id="stats-view-wrap" style="display: none;">
-          <!-- Wrapped Hero Card -->
-          <div class="wrapped-hero-card" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(37, 99, 235, 0.15), rgba(15, 18, 26, 0.95)); border: 1px solid rgba(139, 92, 246, 0.35); border-radius: var(--radius-lg); padding: 28px; margin-bottom: 24px; position: relative; overflow: hidden; box-shadow: 0 16px 40px rgba(0,0,0,0.5);">
-            <div style="position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
-              <div>
-                <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; background: rgba(139, 92, 246, 0.25); border: 1px solid rgba(139, 92, 246, 0.5); border-radius: var(--radius-full); color: #c084fc; font-size: 0.75rem; font-weight: 700; margin-bottom: 12px;">
-                  <span>✨ KASETKU MUSIC WRAPPED</span>
-                </div>
-                <h2 style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: -0.02em;">Statistik Mendengarkan Anda</h2>
-                <p style="font-size: 0.9rem; color: var(--text-secondary); max-width: 500px;">Rangkuman kebiasaan mendengar musik, track favorit, dan artis yang paling sering menemani hari-hari Anda.</p>
-              </div>
-              <div id="wrapped-persona-badge" style="padding: 14px 20px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: var(--radius-md); text-align: center; backdrop-filter: blur(12px);">
-                <span style="font-size: 0.72rem; color: var(--text-tertiary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 4px;">Persona Musik</span>
-                <span id="wrapped-persona-title" style="font-size: 1.1rem; font-weight: 800; color: #38bdf8;">🎧 Audiophile Sejati</span>
-              </div>
-            </div>
-          </div>
-
           <div class="stats-overview-grid">
             <div class="stat-card">
               <span class="stat-num" id="stat-total-minutes">0</span>
@@ -426,19 +409,15 @@
           </div>
 
           <div class="stats-sections-flex" style="display: flex; gap: 24px; margin-top: 28px; flex-wrap: wrap;">
-            <div style="flex: 1.2; min-width: 320px;">
-              <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-                <span>🔥 Top 10 Lagu Terfavorit</span>
-              </h3>
-              <div class="top-tracks-list" id="top-tracks-container" style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="flex: 1; min-width: 300px;">
+              <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary);">🔥 Top 10 Lagu Paling Sering Diputar</h3>
+              <div class="top-tracks-list" id="top-tracks-container">
                 <!-- Dynamic Top Tracks -->
               </div>
             </div>
-            <div style="flex: 1; min-width: 280px;">
-              <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-                <span>⭐ Artis Paling Sering Didengar</span>
-              </h3>
-              <div class="top-artists-list" id="top-artists-container" style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="flex: 1; min-width: 260px;">
+              <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 14px; color: var(--text-primary);">⭐ Top Artis Favorit</h3>
+              <div class="top-artists-list" id="top-artists-container">
                 <!-- Dynamic Top Artists -->
               </div>
             </div>
