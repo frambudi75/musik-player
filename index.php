@@ -99,6 +99,15 @@
             <span class="nav-text-desktop">Upload Musik</span>
             <span class="nav-text-mobile">Tambah</span>
           </a>
+          <a href="#" class="nav-item" id="sidebar-pwa-install" title="Install Aplikasi KasetKu (PWA)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+              <line x1="12" y1="18" x2="12.01" y2="18"></line>
+              <path d="M12 6v6m-3-3l3 3 3-3"/>
+            </svg>
+            <span class="nav-text-desktop">Install App</span>
+            <span class="nav-text-mobile">Install</span>
+          </a>
         </nav>
 
         <nav class="nav-group playlist-nav-group" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
@@ -1480,14 +1489,6 @@
             <p>✨ <strong>Resolusi Tinggi:</strong> Otomatis di-render dalam HD Crystal Clear (1080px), siap di-upload ke WhatsApp Status, IG Story, atau kirim langsung ke chat!</p>
           </div>
 
-          <div class="wrapped-action-buttons">
-            <button id="btn-share-story-wa" class="btn-wrapped-action btn-share-wa">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
-              </svg>
-              <span>Bagikan ke Status WA / Share</span>
-            </button>
-            
             <div style="display: flex; gap: 8px;">
               <button id="btn-download-story-png" class="btn-wrapped-action btn-download-png" style="flex: 1;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1509,6 +1510,96 @@
 
         </div>
 
+      </div>
+    </div>
+  </div>
+            
+  <!-- Mobile Song Options Bottom Sheet Modal -->
+  <div class="modal-overlay" id="mobile-song-sheet">
+    <div class="modal-card mobile-sheet-card" style="max-width: 440px; width: 95%;">
+      <div class="mobile-sheet-header">
+        <div class="mobile-sheet-track">
+          <img id="sheet-cover" src="assets/sample_covers/placeholder.svg" alt="Cover" class="mobile-sheet-cover" />
+          <div class="mobile-sheet-info">
+            <h4 id="sheet-title" class="mobile-sheet-title">Judul Lagu</h4>
+            <p id="sheet-artist" class="mobile-sheet-artist">Nama Artis</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="mobile-sheet-close-btn">&times;</button>
+      </div>
+      <div class="mobile-sheet-actions">
+        <button class="sheet-action-item" id="sheet-act-play">
+          <span class="sheet-act-icon">▶️</span>
+          <span>Putar Lagu Sekarang</span>
+        </button>
+        <button class="sheet-action-item" id="sheet-act-like">
+          <span class="sheet-act-icon">💖</span>
+          <span id="sheet-like-label">Tambahkan ke Favorit</span>
+        </button>
+        <button class="sheet-action-item" id="sheet-act-offline">
+          <span class="sheet-act-icon">📥</span>
+          <span id="sheet-offline-label">Simpan Offline (Tanpa Internet)</span>
+        </button>
+        <button class="sheet-action-item" id="sheet-act-playlist">
+          <span class="sheet-act-icon">➕</span>
+          <span>Tambahkan ke Playlist</span>
+        </button>
+        <button class="sheet-action-item" id="sheet-act-trim">
+          <span class="sheet-act-icon">✂️</span>
+          <span>Potong Ringtone / Audio Trimmer</span>
+        </button>
+        <button class="sheet-action-item" id="sheet-act-lrc">
+          <span class="sheet-act-icon">🎙️</span>
+          <span>Studio Buat Lirik (.LRC)</span>
+        </button>
+        <button class="sheet-action-item" id="sheet-act-edit">
+          <span class="sheet-act-icon">✏️</span>
+          <span>Edit Info Tag & Metadata</span>
+        </button>
+        <button class="sheet-action-item text-danger" id="sheet-act-remove-pl" style="display: none;">
+          <span class="sheet-act-icon">🗑️</span>
+          <span>Hapus dari Playlist Ini</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PWA Install Guide Modal -->
+  <div class="modal-overlay" id="pwa-install-modal">
+    <div class="modal-card" style="max-width: 480px; width: 95%;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.4rem;">📲</span>
+          <h3 class="modal-title" style="margin: 0;">Install Aplikasi KasetKu</h3>
+        </div>
+        <button class="modal-close-btn" id="pwa-modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 14px 0 0;">
+        <div style="text-align: center; margin-bottom: 18px;">
+          <img src="assets/icons/icon-192.png" alt="KasetKu Logo" style="width: 72px; height: 72px; border-radius: 18px; box-shadow: 0 8px 24px rgba(168, 85, 247, 0.4); margin-bottom: 10px;" />
+          <h4 style="font-size: 1.15rem; font-weight: 800; color: #fff; margin: 0 0 4px;">KasetKu PWA Audio Experience</h4>
+          <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0;">Aplikasi pemutar musik instan, ringan, hemat baterai, dan bisa memutar lagu offline tanpa kuota internet.</p>
+        </div>
+
+        <button id="pwa-modal-direct-install-btn" class="btn-primary-play" style="width: 100%; height: 44px; border-radius: var(--radius-full); font-size: 0.95rem; font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Install Aplikasi Sekarang (1-Klik)</span>
+        </button>
+
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px 16px; font-size: 0.84rem; color: var(--text-secondary); line-height: 1.5;">
+          <div style="font-weight: 700; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <span>🍏 Petunjuk untuk Pengguna iPhone / Safari:</span>
+          </div>
+          <ol style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px;">
+            <li>Ketuk tombol <strong>Bagikan (Share / ⬆️)</strong> di bar bawah Safari.</li>
+            <li>Gulir ke bawah dan ketuk <strong>"Tambah ke Layar Utama" (Add to Home Screen ➕)</strong>.</li>
+            <li>Ketuk <strong>"Tambah"</strong> di pojok kanan atas. Selesai!</li>
+          </ol>
+        </div>
       </div>
     </div>
   </div>

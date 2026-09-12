@@ -474,6 +474,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                   </svg>
                 </button>
               ` : ''}
+              <button class="mobile-more-btn" title="Opsi Lagu" data-action="mobile-more" data-id="${escapeHTML(song.id)}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="12" r="2.2"></circle>
+                  <circle cx="12" cy="5" r="2.2"></circle>
+                  <circle cx="12" cy="19" r="2.2"></circle>
+                </svg>
+              </button>
             </div>
           </td>
         </tr>
@@ -605,6 +612,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         openLrcMakerModal(song);
       } else if (action === 'edit-meta') {
         openEditMetadataModal(song);
+      } else if (action === 'mobile-more') {
+        openMobileSongSheet(song);
       } else if (action === 'remove-pl') {
         await window.PlaylistManager.removeSongFromPlaylist(currentActivePlaylistId, song.id);
         showToast('Lagu dihapus dari playlist', '✓');
@@ -1306,7 +1315,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       tableViewWrap.style.display = 'none';
       songsGrid.style.display = 'grid';
     } else {
-      tableViewWrap.style.display = 'table';
+      tableViewWrap.style.display = 'block';
       songsGrid.style.display = 'none';
     }
 
@@ -1864,7 +1873,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         tableViewWrap.style.display = 'none';
         songsGrid.style.display = 'grid';
       } else {
-        tableViewWrap.style.display = 'table';
+        tableViewWrap.style.display = 'block';
         songsGrid.style.display = 'none';
       }
     });
@@ -4115,25 +4124,198 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let deferredPrompt = null;
   const pwaInstallBtn = document.getElementById('pwa-install-btn');
-  const installBtnAlt = document.getElementById('btn-install-app');
+  const sidebarPwaInstall = document.getElementById('sidebar-pwa-install');
+  const pwaInstallModal = document.getElementById('pwa-install-modal');
+  const pwaModalCloseBtn = document.getElementById('pwa-modal-close-btn');
+  const pwaModalDirectInstallBtn = document.getElementById('pwa-modal-direct-install-btn');
+
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+  if (!isStandalone) {
+    if (pwaInstallBtn) pwaInstallBtn.style.display = 'inline-flex';
+    if (sidebarPwaInstall) sidebarPwaInstall.style.display = 'flex';
+  } else {
+    if (pwaInstallBtn) pwaInstallBtn.style.display = 'none';
+    if (sidebarPwaInstall) sidebarPwaInstall.style.display = 'none';
+  }
 
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    if (pwaInstallBtn) {
-      pwaInstallBtn.style.display = 'inline-flex';
-      pwaInstallBtn.addEventListener('click', async () => {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt();
-        const choice = await deferredPrompt.userChoice;
-        if (choice.outcome === 'accepted') {
-          showToast('Aplikasi KasetKu berhasil di-install!', '✓');
-          pwaInstallBtn.style.display = 'none';
-        }
-        deferredPrompt = null;
-      });
-    }
+    if (pwaInstallBtn) pwaInstallBtn.style.display = 'inline-flex';
+    if (sidebarPwaInstall) sidebarPwaInstall.style.display = 'flex';
   });
+
+  window.addEventListener('appinstalled', () => {
+    showToast('KasetKu berhasil terpasang di perangkat Anda! 📲', '🎉');
+    deferredPrompt = null;
+    if (pwaInstallBtn) pwaInstallBtn.style.display = 'none';
+    if (sidebarPwaInstall) sidebarPwaInstall.style.display = 'none';
+    if (pwaInstallModal) pwaInstallModal.classList.remove('open');
+  });
+
+  async function triggerPwaInstall() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const choice = await deferredPrompt.userChoice;
+      if (choice.outcome === 'accepted') {
+        showToast('Memasang KasetKu...', '📲');
+      }
+      deferredPrompt = null;
+    } else {
+      if (pwaInstallModal) pwaInstallModal.classList.add('open');
+    }
+  }
+
+  if (pwaInstallBtn) pwaInstallBtn.addEventListener('click', triggerPwaInstall);
+  if (sidebarPwaInstall) sidebarPwaInstall.addEventListener('click', (e) => {
+    e.preventDefault();
+    triggerPwaInstall();
+  });
+  if (pwaModalDirectInstallBtn) pwaModalDirectInstallBtn.addEventListener('click', triggerPwaInstall);
+  if (pwaModalCloseBtn) pwaModalCloseBtn.addEventListener('click', () => pwaInstallModal.classList.remove('open'));
+  if (pwaInstallModal) pwaInstallModal.addEventListener('click', (e) => {
+    if (e.target === pwaInstallModal) pwaInstallModal.classList.remove('open');
+  });
+
+  // Mobile Song Action Sheet Controller
+  const mobileSongSheet = document.getElementById('mobile-song-sheet');
+  const mobileSheetCloseBtn = document.getElementById('mobile-sheet-close-btn');
+  const sheetCover = document.getElementById('sheet-cover');
+  const sheetTitle = document.getElementById('sheet-title');
+  const sheetArtist = document.getElementById('sheet-artist');
+  const sheetActPlay = document.getElementById('sheet-act-play');
+  const sheetActLike = document.getElementById('sheet-act-like');
+  const sheetLikeLabel = document.getElementById('sheet-like-label');
+  const sheetActOffline = document.getElementById('sheet-act-offline');
+  const sheetOfflineLabel = document.getElementById('sheet-offline-label');
+  const sheetActPlaylist = document.getElementById('sheet-act-playlist');
+  const sheetActTrim = document.getElementById('sheet-act-trim');
+  const sheetActLrc = document.getElementById('sheet-act-lrc');
+  const sheetActEdit = document.getElementById('sheet-act-edit');
+  const sheetActRemovePl = document.getElementById('sheet-act-remove-pl');
+
+  let activeSheetSong = null;
+
+  async function openMobileSongSheet(song) {
+    if (!mobileSongSheet || !song) return;
+    activeSheetSong = song;
+
+    if (sheetCover) sheetCover.src = getSafeCoverUrl(song);
+    if (sheetTitle) sheetTitle.textContent = song.title || 'Unknown Track';
+    if (sheetArtist) sheetArtist.textContent = song.artist || 'Unknown Artist';
+
+    const isLiked = window.PlaylistManager.isLiked(song.id);
+    if (sheetLikeLabel) sheetLikeLabel.textContent = isLiked ? 'Hapus dari Favorit' : 'Tambahkan ke Favorit (Liked)';
+
+    const isSaved = song.isOffline || (window.OfflineDB && (await window.OfflineDB.isSaved(song.id)));
+    if (sheetOfflineLabel) sheetOfflineLabel.textContent = isSaved ? 'Hapus dari Offline' : 'Simpan Offline (Bisa diputar tanpa internet)';
+
+    if (sheetActRemovePl) {
+      sheetActRemovePl.style.display = isInsideCustomPlaylist ? 'flex' : 'none';
+    }
+
+    mobileSongSheet.classList.add('open');
+  }
+
+  if (mobileSheetCloseBtn) {
+    mobileSheetCloseBtn.addEventListener('click', () => mobileSongSheet.classList.remove('open'));
+  }
+  if (mobileSongSheet) {
+    mobileSongSheet.addEventListener('click', (e) => {
+      if (e.target === mobileSongSheet) mobileSongSheet.classList.remove('open');
+    });
+  }
+
+  if (sheetActPlay) {
+    sheetActPlay.addEventListener('click', () => {
+      if (activeSheetSong) {
+        window.PlaylistManager.playTrack(activeSheetSong, currentDisplayedSongs);
+        mobileSongSheet.classList.remove('open');
+      }
+    });
+  }
+
+  if (sheetActLike) {
+    sheetActLike.addEventListener('click', async () => {
+      if (activeSheetSong) {
+        const liked = await window.PlaylistManager.toggleLike(activeSheetSong.id);
+        showToast(liked ? 'Ditambahkan ke Liked Songs' : 'Dihapus dari Liked Songs');
+        if (currentNavTab === 'liked') renderCurrentView();
+        mobileSongSheet.classList.remove('open');
+      }
+    });
+  }
+
+  if (sheetActOffline) {
+    sheetActOffline.addEventListener('click', async () => {
+      if (activeSheetSong) {
+        const isSaved = await window.OfflineDB.isSaved(activeSheetSong.id);
+        if (isSaved) {
+          await window.OfflineDB.removeTrack(activeSheetSong.id);
+          showToast(`Lagu offline "${activeSheetSong.title}" dihapus`, '🗑️');
+        } else {
+          showToast('Mengunduh lagu untuk offline...', '⏳');
+          try {
+            await window.OfflineDB.saveTrack(activeSheetSong);
+            showToast(`"${activeSheetSong.title}" tersimpan offline!`, '💾');
+          } catch (err) {
+            showToast('Gagal mengunduh offline: ' + err.message, '⚠️');
+          }
+        }
+        if (currentNavTab === 'offline') renderCurrentView();
+        mobileSongSheet.classList.remove('open');
+      }
+    });
+  }
+
+  if (sheetActPlaylist) {
+    sheetActPlaylist.addEventListener('click', () => {
+      if (activeSheetSong) {
+        mobileSongSheet.classList.remove('open');
+        openAddToPlaylistModal(activeSheetSong);
+      }
+    });
+  }
+
+  if (sheetActTrim) {
+    sheetActTrim.addEventListener('click', () => {
+      if (activeSheetSong) {
+        mobileSongSheet.classList.remove('open');
+        openTrimmerModal(activeSheetSong);
+      }
+    });
+  }
+
+  if (sheetActLrc) {
+    sheetActLrc.addEventListener('click', () => {
+      if (activeSheetSong) {
+        mobileSongSheet.classList.remove('open');
+        openLrcMakerModal(activeSheetSong);
+      }
+    });
+  }
+
+  if (sheetActEdit) {
+    sheetActEdit.addEventListener('click', () => {
+      if (activeSheetSong) {
+        mobileSongSheet.classList.remove('open');
+        openEditMetadataModal(activeSheetSong);
+      }
+    });
+  }
+
+  if (sheetActRemovePl) {
+    sheetActRemovePl.addEventListener('click', async () => {
+      if (activeSheetSong && currentActivePlaylistId) {
+        await window.PlaylistManager.removeSongFromPlaylist(currentActivePlaylistId, activeSheetSong.id);
+        showToast('Lagu dihapus dari playlist', '✓');
+        renderSidebarPlaylists();
+        renderCurrentView();
+        mobileSongSheet.classList.remove('open');
+      }
+    });
+  }
 
   // ==========================================
   // THEME ACCENT PALETTE CONTROLLER

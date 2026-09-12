@@ -2518,10 +2518,19 @@ html, body {
     display: none;
   }
 
+  #table-view-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    display: block !important;
+  }
+
   .song-table {
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
     border-collapse: separate !important;
   }
   .song-table colgroup,
@@ -2531,20 +2540,22 @@ html, body {
   .song-table tbody {
     display: flex !important;
     flex-direction: column !important;
-    gap: 5px !important;
+    gap: 6px !important;
     width: 100% !important;
+    max-width: 100% !important;
   }
   .song-row {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    padding: 6px 8px !important;
-    border-radius: var(--radius-sm) !important;
+    padding: 8px 10px !important;
+    border-radius: var(--radius-md) !important;
     background: var(--bg-surface) !important;
     border: 1px solid var(--border-subtle) !important;
     width: 100% !important;
+    max-width: 100% !important;
     box-sizing: border-box !important;
-    gap: 6px !important;
+    gap: 8px !important;
   }
   .song-row td {
     padding: 0 !important;
@@ -2555,44 +2566,56 @@ html, body {
     display: none !important;
   }
   .song-row td:nth-child(2) {
-    flex: 1 1 auto !important;
+    flex: 1 1 0% !important;
     min-width: 0 !important;
-    margin-right: 4px !important;
+    width: auto !important;
+    max-width: 100% !important;
     overflow: hidden !important;
   }
   .song-cell-main {
     display: flex !important;
     align-items: center !important;
-    gap: 8px !important;
+    gap: 10px !important;
     width: 100% !important;
     min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
   }
   .song-thumbnail {
-    width: 42px !important;
-    height: 42px !important;
-    border-radius: 6px !important;
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 8px !important;
     flex-shrink: 0 !important;
+    object-fit: cover !important;
   }
   .song-info-stack {
     display: flex !important;
     flex-direction: column !important;
     min-width: 0 !important;
+    flex: 1 1 0% !important;
     overflow: hidden !important;
-    flex: 1 !important;
+    gap: 2px !important;
   }
   .song-cell-title {
-    font-size: 0.85rem !important;
-    font-weight: 600 !important;
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
+    color: #fff !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+    display: block !important;
+    width: 100% !important;
+    line-height: 1.2 !important;
   }
   .song-cell-artist {
-    font-size: 0.72rem !important;
+    font-size: 0.74rem !important;
     color: var(--text-secondary) !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+    display: block !important;
+    width: 100% !important;
+    line-height: 1.2 !important;
   }
   .song-cell-album,
   .song-cell-duration {
@@ -2610,30 +2633,38 @@ html, body {
   .action-btn-group {
     display: flex !important;
     align-items: center !important;
-    gap: 3px !important;
+    gap: 4px !important;
     flex-shrink: 0 !important;
     overflow: visible !important;
   }
+  .song-row .trim-btn,
+  .song-row .lrc-btn,
+  .song-row .edit-meta-btn,
+  .song-row .add-pl-btn,
+  .song-row .remove-pl-btn {
+    display: none !important;
+  }
   .heart-btn,
-  .add-pl-btn,
-  .remove-pl-btn,
-  .edit-meta-btn,
-  .trim-btn,
-  .lrc-btn {
-    width: 26px !important;
-    height: 26px !important;
-    min-width: 26px !important;
+  .offline-btn,
+  .mobile-more-btn {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
     padding: 0 !important;
     flex-shrink: 0 !important;
+    border-radius: var(--radius-full) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid var(--border-subtle) !important;
+    color: var(--text-secondary) !important;
   }
   .heart-btn svg,
-  .add-pl-btn svg,
-  .remove-pl-btn svg,
-  .edit-meta-btn svg,
-  .trim-btn svg,
-  .lrc-btn svg {
-    width: 14px !important;
-    height: 14px !important;
+  .offline-btn svg,
+  .mobile-more-btn svg {
+    width: 15px !important;
+    height: 15px !important;
   }
 
   /* Bottom Navigation Bar */
@@ -3461,9 +3492,121 @@ html, body {
   will-change: transform;
 }
 
-.song-row {
-  content-visibility: auto;
-  contain-intrinsic-size: 52px;
+/* Desktop visibility for mobile-more-btn */
+@media (min-width: 769px) {
+  .mobile-more-btn {
+    display: none !important;
+  }
+}
+
+/* Mobile Song Options Bottom Sheet */
+.mobile-sheet-card {
+  border-radius: 20px 20px 0 0 !important;
+  background: rgba(15, 18, 26, 0.98) !important;
+  backdrop-filter: blur(25px) !important;
+  -webkit-backdrop-filter: blur(25px) !important;
+  border: 1px solid var(--border-bright) !important;
+  border-bottom: none !important;
+  padding: 16px 18px 24px !important;
+  align-self: flex-end !important;
+  margin-bottom: 0 !important;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8) !important;
+  animation: slideUpSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUpSheet {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.mobile-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 10px;
+}
+
+.mobile-sheet-track {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.mobile-sheet-cover {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.mobile-sheet-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.mobile-sheet-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-sheet-artist {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-sheet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sheet-action-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.sheet-action-item:hover,
+.sheet-action-item:active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sheet-action-item.text-danger {
+  color: #ef4444;
+}
+
+.sheet-act-icon {
+  font-size: 1.1rem;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
 }
 
 
